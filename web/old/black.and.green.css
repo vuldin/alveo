@@ -1,0 +1,52 @@
+body {
+ background-color:black;
+}
+a {
+ color:#8d8;
+ font-weight:bold;
+ text-decoration:none;
+}
+a:hover {
+ color:cfc;
+}
+a.file {
+ color:#ddd;
+ font-weight:bold;
+ text-decoration:none;
+}
+a.file:hover {
+ color:white;
+}
+a.channel {
+ text-decoration:none;
+ color:#ddd;
+ border-style:solid;
+ border-color:#ddd;
+ padding-left:3px;
+ padding-right:3px;
+}
+a.channel:hover {
+ background-color:#333;
+}
+h1 {
+ color:#ddd;
+ font-weight:bold;
+ font-size:xx-large;
+} 
+h2 {
+ color:#dddddd;
+ font-weight:bold;
+ font-size:x-large;
+}
+h3 {
+ color:#dddddd;
+ font-weight:bold;
+ font-size:large;
+}
+p {
+ color:#dddddd;
+ font-size:medium;
+}
+ul {
+ list-style:none;
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>WiiU Video</title>
+    <meta charset="utf-8">
+    <!--
+    <script type="text/javascript" src="js/playlist.js"></script>
+    -->
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script type="text/javascript" src="/js/node_modules/now/dist/now.js"></script>
+<!--
+    <script type="text/javascript">
+    //var playlist=['/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e083 - Pallet Party Panic.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e097 - A Shipful Of Shivers.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e098 - Meowth Rules.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e086 - The Lost Lapras.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e089 - The Crystal Onix.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e087 - Fit To Be Tide.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e084 - A Scare In The Air.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e091 - Shell Shock.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e099 - Tracey Gets Bugged.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e094 - The Joy Of Pokemon.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e092 - Stage Fight.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e090 - In The Pink.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e085 - Pokeball Peril.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e096 - Snack Attack.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e088 - Pikachu Re- Volts.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e093 - Bye Bye Psyduck.mp4','/home/joshua/media/video/episodes/Pokemon/Season02 - Orange League/Pokemon - s02e095 - Navel Maneuvers.mp4'];
+    now.findFiles("./");
+    </script>
+  </head>
+  <body>
+    <video id="video" src="http://v2v.cc/~j/theora_testsuite/320x240.ogg" controls>
+      <span>Your browser does not support the <code>video</code> element.</span>
+    </video>
+    <div style="display:none;">
+      <button onclick="document.getElementById('video').play()">Play</button>
+      <button onclick="document.getElementById('video').pause()">Pause</button>
+      <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
+      <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
+    </div> 
+  </body>
+</html>
+-->
+<script>
+      /**
+       * create a function in the now namespace
+       * that the server can call 
+       */
+      now.receiveMessage = function(message) {
+        $('#messages').append('<p>' + message + '</p>');
+      }
+
+      /**
+       * add a click event to call a function in 
+       * the server's now namespace 
+       */
+      $('#send').click( function() {
+        now.sendMessage($('#message').val());
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="messages"></div>
+    <input type="text" id="message"/>
+    <input type="button" id="send" value="Send"/>
+  </body>
+</html>

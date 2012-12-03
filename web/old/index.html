@@ -1,0 +1,72 @@
+<html>
+<head>
+<link rel="stylesheet" class="text/css" href="<?php
+// Include the config files
+include 'cms.config';
+print $stylesheet;
+print "\">";
+print "<script type=\"text/javascript\" src=\"cms.js\"></script>\n<title>";
+// I like the GET method because it's more transparent to the user
+$current_file=$_GET["f"];
+
+// Files are displayed at the bottom while their directory is displayed at the top, so I have to differentiate here
+if (is_dir($current_file))
+ $current_directory=$current_file;
+else
+ $current_directory=substr($current_file,0,strlen($current_file)-strlen(strrchr($current_file,"/")));
+
+// If this isn't done, then the ".."s always stay. It removes the "/.." and then the directory in front of it, performing the "/.." function.
+if (strrchr($current_directory,"/")=="/.."){
+ $current_directory=substr($current_directory,0,strlen($current_directory)-strlen(strrchr($current_directory,"/")));
+ $current_directory=substr($current_directory,0,strlen($current_directory)-strlen(strrchr($current_directory,"/")));
+} 
+
+// This hides the horizontal scrollbar and sets up the javascript function to run at the appropriate times.
+print $current_file;
+print "</title>\n</head>\n\n";
+print "<body style='overflow-x:hidden;' onload='fixvideo();' onresize='fixvideo();'>\n\n";
+
+// This part is the "channels" at the top of the page. It just reads the directories in the folder that this file is in and makes those the channels. Use the "ln" function under *nix, or "mklink /d" under Windows. This is prolly a huge security issue, but I don't care. The javascript stuff makes'em highlight.
+if ($current_file!="" && !is_dir($current_file) && in_array(strrchr($current_file,"."), $images)){
+  $first="";
+  $next="";
+  $prev="";
+  foreach(scandir($current_directory) as $file)
+    if(in_array(strrchr($file,"."),$images)){
+      if($first=="")$first=$file;
+      if($current_directory."/".$p==$current_file)$next=$current_directory."/".$file;
+      if($current_directory."/".$file==$current_file)$prev=$current_directory."/".$p;
+      $p=$file;
+    }
+  if($next=="")$next=$current_directory."/".$first;
+  if($prev==$current_directory."/")$prev=$current_directory."/".$p;
+  print "\n<center>\n<p>\n<a class='channel' href='?f=".$prev."'>Previous</a>\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n<a class='channel' href='?f=".$next."'>Following</a>\n</p>\n<p>\n<img width='100%' src=\"".$current_file."\">\n</p>\n</center>\n";
+}
+print "<center><p>\n";
+
+foreach(scandir(".") as $file)if(is_dir($file) && substr($file,0,1)!=".")print "<a class='channel' href='?f=".$file."'>".$file."</a>\n";
+
+// This is the Help button
+print "<a class='channel' href='old/help.html' target='_new'>Help</a>\n";
+
+// This is the label for the current directory. Clicking it will refresh the directory.
+print "</p></center>\n\n<a href=\"?f=".urlencode($current_directory)."\">".$current_directory."</p>\n\n";
+
+// This lists all the files in that directory, making folders green and files grey. It also provides the links for the new window versions of files. I thought an UL would be a good way to do this, you know, making the HTML structure reflect conceptually or whatever.
+// I have a filter there to remove folders I don't want to see. I also only filter file extensions I want to see. Add or remove items as necessary.
+print "<ul style='list-style-type:none;'>\n";
+
+foreach(scandir($current_directory) as $file)if (is_dir($current_directory."/".$file) && !in_array($file,$ignorefolders))print "<li><a href=\"?f=".urlencode($current_directory)."/".urlencode($file)."\">".$file."</a></li>\n";
+elseif (in_array(strrchr($file,"."),$filetypes) || substr($current_directory,0,5)=="Files")
+  print "<li>
+    <a class='file' href=\"?f=".urlencode($current_directory)."/".urlencode($file)."\">".$file."</a>
+    <a class='file' href='../video.html?f=".urlencode($current_directory)."/".urlencode($file)."' target='_new'>[-]</a>
+    <a class='file' href='".htmlentities($current_directory)."/".htmlentities($file)."' target='_new'>[DL]</a>
+    </li>\n";
+print "</ul>\n";
+ 
+// This is the video. It has the id tag "thevideo" so that the javascript resizer can access it easily. I don't know javascript well, so that is the best way I know how to do this.
+if ($current_file!="" && !is_dir($current_file) && !in_array($current_file, $images))print "\n<center>\n<video controls src=\"".$current_file."\" id='thevideo'></video>\n</center>\n";
+?>
+</body>
+</html>
