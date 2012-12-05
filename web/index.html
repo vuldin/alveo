@@ -3,37 +3,65 @@
   <head>
     <title>WiiU Video</title>
     <meta charset="utf-8">
-    <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
-    <script type="text/javascript" src="/nowjs/now.js"></script>
+    <script src="http://code.jquery.com/jquery-latest.min.js"></script>
+    <script src="/nowjs/now.js"></script>
+    <script src="http://popcornjs.org/code/dist/popcorn-complete.js"></script>
     <script>
-    var mediapath='../video';
+    //var mediapath='../video';
     $(document).ready(function(){
+      var popcorn=Popcorn('#video');
       now.ready(function(){
         now.getList();
+        popcorn.footnote({
+          /*
+          start:2,
+          end:5,
+          target:'footnote',
+          text:'Pop!'
+          */
+        });
+        popcorn.on('ended',function(){
+          console.log('video has ended');
+          /*
+          $($('video').children()[0]).attr('src','http://www.808.dk/pics/video/gizmo.mp4');
+          popcorn.load();
+          popcorn.play();
+          */
+        });
       });
+      now.createDirectoryList=function(list){
+        $('#list').empty();
+        $.each(list,function(key,dir){
+          if(dir.vids.length>0){
+            var dirdiv=jQuery('<div/>',{text:dir.name+' (subdirs: '+dir.subdirs.length+', vids: '+dir.vids.length+')'}).appendTo($('#list'));
+            dirdiv.click(function(){
+              console.log(dirdiv.empty());
+              $.each(dir.vids,function(key,vid){
+                var viddiv=jQuery('<div/>',{text:vid.name}).appendTo(dirdiv);
+                viddiv.on('click',function(){
+                  console.log(vid.path);
+                  $($('video').children()[0]).attr('src',vid.path);
+                  popcorn.load();
+                  popcorn.play();
+                });
+              });
+            });
+          }
+        });
+      }
     });
-    // testing purposes
-    now.getLocalList=function(){
-      return now.getList();
-    }
-    now.createDirectoryList=function(list){
-      $('#list').empty();
-      $.each(list,function(key,dirs){
-        $('#list').append($("<div></div>").text(dirs.name+' (subdirs: '+dirs.subdirs.length+', vids: '+dirs.vids.length+')'));
-      });
-    }
+    document.addEventListener('DOMContentLoaded',function(){},false);
     </script>
   </head>
   <body>
     <!--
     <video id="video" src="http://v2v.cc/~j/theora_testsuite/320x240.ogg" controls>
     <video id="video" src="/video/theoratest.ogg" type="video/ogg" controls>
-    -->
     <video id="video" controls>
-      <!--
       <source src="/video/Pokemon - s02e099 - Tracey Gets Bugged.mp4" type="video/mp4"></source>
-      -->
       <source src="/video/theoratest.ogg" type="video/ogg"></source>
+      <source src="/video/theoratest.ogg" type="video/ogg"></source>
+      <source src="http://videos.mozilla.org/serv/webmademovies/popcornplug.mp4"></source>
       <span>Your browser does not support the <code>video</code> element.</span>
     </video>
     <div style="display:none;">
@@ -41,16 +69,18 @@
       <button onclick="document.getElementById('video').pause()">Pause</button>
       <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
       <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
-    </div> 
+    </div>
+    -->
+    <video height="180" width="300" id="video"controls>
+      <source src="http://localhost:9000/episodes/The%20Walking%20Dead/Season%202/The%20Walking%20Dead%20-%20s02e11%20-%20Judge%20Jury%20Executioner.mp4"></source>
+      <!--
+      <source src="http://videos.mozilla.org/serv/webmademovies/popcornplug.ogv">
+      <source src="http://videos.mozilla.org/serv/webmademovies/popcornplug.webm">
+      -->
+    </video>
+    <div id="footnote"></div>
     <div id="list">
       <span>Your list is empty.</span>
     </div>
-    <!--
-    <input type="text" id="text-input">
-    <input type="submit" value="Send" disabled id="send-button">
-    <select id="server-room">
-      <option value="connecting" selected>Connecting...</option>  
-    </select>
-    -->
   </body>
 </html>
