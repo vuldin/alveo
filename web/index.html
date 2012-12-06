@@ -32,21 +32,24 @@
       now.createDirectoryList=function(list){
         $('#list').empty();
         $.each(list,function(key,dir){
-          if(dir.vids.length>0){
             var dirdiv=jQuery('<div/>',{text:dir.name+' (subdirs: '+dir.subdirs.length+', vids: '+dir.vids.length+')'}).appendTo($('#list'));
+            var vidsdiv=jQuery('<div/>',{}).appendTo(dirdiv);
             dirdiv.click(function(){
-              console.log(dirdiv.empty());
-              $.each(dir.vids,function(key,vid){
-                var viddiv=jQuery('<div/>',{text:vid.name}).appendTo(dirdiv);
-                viddiv.on('click',function(){
-                  console.log(vid.path);
-                  $($('video').children()[0]).attr('src',vid.path);
-                  popcorn.load();
-                  popcorn.play();
+              if(vidsdiv[0].children.length==0){
+                // list divs
+                $.each(dir.vids,function(key,vid){
+                  var viddiv=jQuery('<div/>',{text:vid.name}).appendTo(vidsdiv);
+                  viddiv.on('click',function(){
+                    $($('video').children()[0]).attr('src',vid.url);
+                    popcorn.load();
+                    popcorn.play();
+                  });
                 });
-              });
+              }else{
+                // remove divs
+                vidsdiv.empty();
+              }
             });
-          }
         });
       }
     });
