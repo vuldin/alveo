@@ -1,6 +1,7 @@
 var fs=require('fs'),
     walk=require('walkdir');
-    nowjs=require('now');
+    nowjs=require('now'),
+    mime=require('mime');
 /*
 var vidStreamer = require('vid-streamer');
 var vidstreamSettings={
@@ -29,33 +30,84 @@ mediaserver.on('connection',function(client){
 */
 var mediaserverUrl="http://wiivid:9000/";
 var server=require('http').createServer(function(req,response){
-  fs.readFile('../index.html',function(err,data){
-    response.writeHead(200,{'Content-Type':'text/html'});
-    response.write(data);
+  var path=req.url,
+      contentType='';
+  /*
+  var pathext=path.substring(path.lastIndexOf('.')+1,path.length);
+  var contentTypes = {
+    'html': 'text/html',
+    'js':   'text/javascript',
+    'css':  'text/css',
+    'ico':  'image/x-icon'
+  };
+  for(ext in contentTypes){
+    if(pathext==ext)contentType=contentTypes[ext];
+  }
+  */
+  if(path=='/'){
+    path='/index.html';
+  }
+  contentType=mime.lookup(path);
+  console.log(path+'\t'+contentType);
+  fs.readFile('..'+path,function(err,content){
+    response.writeHead(200,{'Content-Type':contentType});
+    response.write(content);
     response.end();
   });
+  console.log(req.headers['user-agent']);
 });
+/*
+// https://groups.google.com/forum/?fromgroups=#!topic/nodejs/gzng3IJcBX8
+var range=request.headers.range;
+var total=file.length;
+var parts=range.replace(/bytes=/,'').split('-');
+var partialstart=parts[0];
+var partialend=parts[1];
+var start=parseInt(partialstart,10);
+var end=partialend ? parseInt(partialend,10):total-1;
+var chunksize=(end-start)+1;
+response.writeHead(206,{'Content-Range':'bytes '+start+'-'+end+'/'+total,'Accept-Ranges':'bytes','Content-Length':chunksize,'Content-Type':type});
+response.end(file.slice(start,end),'binary'); 
+*/
 server.listen(8888);
-console.log('Server running at http://127.0.0.1:8888/');
+console.log('running at http://127.0.0.1:8888/');
 var everyone = nowjs.initialize(server);
-var options={"follow_symlinks":true,"max_depth:":2};
+//var options={"follow_symlinks":true,"max_depth:":1};
+var options={"follow_symlinks":true};
 var emitter=walk('../video',options);
 var dirs=new Array();
-//dirs.sort(sortByPath);
 emitter.on('directory',function(dirpath,stat){
   if(dirpath.indexOf("/.")==-1){
+    var vids=new Array();
+    //vids.sort(sortByPath);
+    var dir={"name":dirpath.substring(dirpath.lastIndexOf("/")+1,dirpath.length),"path":dirpath,"url":dirpath.replace(dirpath.substring(0,dirpath.indexOf("video")+6),mediaserverUrl),"lastmod":stat.atime,"subdirs":new Array(),"vids":vids};
+    //console.log(dirpath.substring(0,dirpath.lastIndexOf("/")));
+    //console.log(dirs[dirs.length].path);
     /*
-    for(var i=0;i<dirs.length;i++){
-      // one directory up
-      dirpath.substring(0,dirpath.lastIndexOf("/"));
-      // starting dir
-      // get from emitter
+    if(dirs[dirs.length-1]!=undefined){
+      console.log('last:\t\t'+dirs[dirs.length-1].path);
+      console.log('current:\t'+dirpath);
+      console.log('mod:\t\t'+dirpath.substring(0,dirpath.lastIndexOf("/")));
     }
     */
-    var vids=new Array();
-    vids.sort(sortByPath);
-    var dir={"name":dirpath.substring(dirpath.lastIndexOf("/")+1,dirpath.length),"path":dirpath,"url":dirpath.replace(dirpath.substring(0,dirpath.indexOf("video")+6),mediaserverUrl),"lastmod":stat.atime,"subdirs":new Array(),"vids":vids};
-    dirs.push(dir);
+    var parentFound=false;
+    for(var i=0;i<dirs.length;i++){
+      //if(dirs[dirs.length-1]!=undefined){
+        //console.log('mod:\t\t'+dirpath.substring(0,dirpath.lastIndexOf("/")));
+        //console.log('comparing to:\t'+dirs[i].path);
+        if(dirpath.substring(0,dirpath.lastIndexOf("/"))==dirs[i].path){
+          // parent of current directory matches an existing directory
+          console.log('subdir: '+dirpath);
+          var subdirs=dirs[i].subdirs;
+          subdirs.push(dir);
+          parentFound=true;
+        }
+      //}else dirs.push(dir);
+    }
+    if(!parentFound){
+      console.log('add: '+dirpath);
+      dirs.push(dir);
+    }
   }
 });
 emitter.on('file',function(vidpath,stat){
@@ -73,17 +125,20 @@ emitter.on('file',function(vidpath,stat){
 emitter.on('end',function(){
   console.log('dirwalk done');
   for(i in dirs){
-    dirs[i].vids.sort(function(a,b){
-      return a.path.localeCompare(b.path);
-    });
+    sortDir(dirs[i]);
   }
-  dirs.sort(function(a,b){
+});
+everyone.now.sGetList=function(){
+  everyone.now.cCreateDirectoryList(dirs);
+};
+function sortDir(dir){
+  dir.subdirs.sort(function(a,b){
     return a.path.localeCompare(b.path);
   });
-});
-everyone.now.getList=function(){
-  everyone.now.createDirectoryList(dirs);
-};
-function sortByPath(a,b){
-  return a.path.localCompare(b.path);
+  for(var i=0;i<dir.subdirs.length;i++){
+    sortDir(dir.subdirs[i]);
+  }
+  dir.vids.sort(function(a,b){
+    return a.path.localeCompare(b.path);
+  });
 }
