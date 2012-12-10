@@ -9,6 +9,10 @@
     <script src="http://popcornjs.org/code/dist/popcorn-complete.js"></script>
     <script>
     //var mediapath='../video';
+    //var progress=0;
+    //var playing=false;
+    var currentVid=-1;
+    var isPlaying=false;
     $(document).ready(function(){
       var popcorn=Popcorn('#video');
       now.ready(function(){
@@ -21,53 +25,119 @@
           text:'Pop!'
           */
         });
+        // http://popcornjs.org/popcorn-docs/events/
+        popcorn.on('dataunavailable',function(){
+          console.log('dataunavailable');
+        });
+        popcorn.on('durationchange',function(){
+          //console.log('durationchange');
+        });
         popcorn.on('ended',function(){
           console.log('video has ended');
-          /*
-          $($('video').children()[0]).attr('src','http://www.808.dk/pics/video/gizmo.mp4');
-          popcorn.load();
-          popcorn.play();
-          */
+          playing=false;
+        });
+        popcorn.on('emptied',function(){
+          console.log('emptied');
+          playing=false;
+        });
+        popcorn.on('empty',function(){
+          console.log('empty');
+          isPlaying=false;
+        });
+        popcorn.on('ended',function(){
+          console.log('ended');
+          isPlaying=false;
+        });
+        popcorn.on('error',function(){
+          console.log('error');
+        });
+        popcorn.on('loadeddata',function(){
+          //console.log('loadeddata');
+        });
+        popcorn.on('loadedmetadata',function(){
+          //console.log('loadedmetadata');
+        });
+        popcorn.on('playing',function(event){
+          console.log('playing');
+          isPlaying=true;
+        });
+        popcorn.on('progress',function(event){
+          console.log(currentVid.path);
+          console.log($('#video')[0].currentTime);
+        });
+        popcorn.on('suspend',function(){
+          //console.log('suspend');
+          isPlaying=false;
+        });
+        popcorn.on('waiting',function(){
+          console.log('waiting');
+          isPlaying=false;
         });
       });
-      now.cCreateDirectoryList=function(list){
-        console.log(list);
+      now.cCreateDirectoryList=function(tree){
+        //console.log(tree);
         $('#list').empty();
-        $.each(list,function(key,dir){
-          buildDivTree(dir,$('#list'));
+        $.each(tree.subdirs,function(key,obj){
+          if(obj.subdirs!=undefined)buildDivTree(obj,$('#list'),true);
+        });
+        // handle top level videos
+        $.each(tree.vids,function(key,obj){
+          buildDivTree(obj,$('#list'),false);
         });
       };
-      function buildDivTree(dir,parentDiv){
-        var dirdiv=jQuery('<div/>',{text:dir.name+' (subdirs: '+dir.subdirs.length+', vids: '+dir.vids.length+')'}).appendTo(parentDiv);
-        dirdiv.addClass('dirdiv');
-        var togglediv=jQuery('<div/>',{}).addClass('togglediv');;
-        var subdirsdiv=jQuery('<div/>',{}).addClass('subdirsdiv');
-        var vidsdiv=jQuery('<div/>',{}).addClass('vidsdiv');;
-        dirdiv.click(function(){
-          if(subdirsdiv[0].children.length==0&&vidsdiv[0].children.length==0){
-            togglediv.appendTo(dirdiv);
-            subdirsdiv.appendTo(togglediv);
-            vidsdiv.appendTo(togglediv);
-            $.each(dir.subdirs,function(key,subdir){
-              buildDivTree(subdir,subdirsdiv);
-            });
-            $.each(dir.vids,function(key,vid){
-              var viddiv=jQuery('<div/>',{text:vid.name}).appendTo(vidsdiv);
-              viddiv.addClass('viddiv');
-              viddiv.on('click',function(){
-                $($('video').children()[0]).attr('src',vid.url);
-                popcorn.load();
-                popcorn.play();
+      now.cVidSearch=function(vid){
+        console.log(vid);
+        currentVid=vid;
+      };
+      function buildDivTree(obj,parentDiv,isDir){
+        var div={};
+        if(isDir){
+          div=jQuery('<div/>',{text:obj.name+' (subdirs: '+obj.subdirs.length+', vids: '+obj.vids.length+')'}).appendTo(parentDiv);
+          div.addClass('dirDiv');
+          var togglediv=jQuery('<div/>',{}).addClass('toggleDiv');
+          var subdirsdiv=jQuery('<div/>',{}).addClass('subdirsDiv');
+          var vidsdiv=jQuery('<div/>',{}).addClass('vidsDiv');
+          div.on('click',function(event){
+            event.stopPropagation();
+            if(subdirsdiv[0].children.length==0&&vidsdiv[0].children.length==0){
+              togglediv.appendTo(div);
+              subdirsdiv.appendTo(togglediv);
+              vidsdiv.appendTo(togglediv);
+              $.each(obj.subdirs,function(key,subdir){
+                buildDivTree(subdir,subdirsdiv,true);
               });
-            });
-          }else{
-            subdirsdiv.empty().remove();
-            vidsdiv.empty().remove();
-            togglediv.empty().remove();
-          }
-        }); // end click function
+              $.each(obj.vids,function(key,vid){
+                buildDivTree(vid,vidsdiv,false);
+              });
+            }else{
+              subdirsdiv.empty().remove();
+              vidsdiv.empty().remove();
+              togglediv.empty().remove();
+            }
+          }); // end click function
+        }
+        else{
+          div=jQuery('<div/>',{text:obj.name+' (mime: '+obj.mime+')'}).appendTo(parentDiv);
+          div.addClass('vidDiv');
+          div.on('click',function(event){
+            event.stopPropagation();
+            $($('video').children()[0]).attr('src',obj.url);
+            popcorn.load();
+            popcorn.play();
+            now.sVidSearch(decodeURI(popcorn.media.currentSrc));
+            recTimePlayed(currentVid);
+          });
+        }
       }
-
+      function recTimePlayed(vid){
+        if(isPlaying){
+          console.log('recTimePlayed');
+          //now.sRecTimePlayed(vid,$('#video')[0].currentTime);
+          vid.timePlayed=$('#video')[0].currentTime;
+          now.sUpdateVid(vid);
+          setTimeout(recTimePlayed,10000);
+        }
+      }
       //$('#userAgent').text(navigator.userAgent);
       if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
         $('body')[0].style.background='#39414A';
@@ -75,24 +145,20 @@
         $('#video')[0].style.display='none';
       }
     });
-    
     //document.addEventListener('DOMContentLoaded',function(){},false);
     </script>
   </head>
   <body>
     <video id="video" height="180" width="300" controls>
-      <!--
-      <source src="http://videos.mozilla.org/serv/webmademovies/popcornplug.ogv">
-      <source src="http://videos.mozilla.org/serv/webmademovies/popcornplug.webm">
-      -->
       <source src=""></source>
-      Your browser does not support the <code>video</code> element.
+      Please update your browser (video element is unsupported).
     </video>
-    <div style="display:none;">
+    <div>
       <button onclick="document.getElementById('video').play()">Play</button>
       <button onclick="document.getElementById('video').pause()">Pause</button>
       <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
       <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
+      <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button>
     </div>
     <div id="footnote"></div>
     <div id="list">
