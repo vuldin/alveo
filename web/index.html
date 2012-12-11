@@ -13,6 +13,7 @@
     //var playing=false;
     var currentVid=-1;
     var isPlaying=false;
+    var volume=0;
     $(document).ready(function(){
       var popcorn=Popcorn('#video');
       now.ready(function(){
@@ -30,7 +31,7 @@
           console.log('dataunavailable');
         });
         popcorn.on('durationchange',function(){
-          //console.log('durationchange');
+          console.log('durationchange');
         });
         popcorn.on('ended',function(){
           console.log('video has ended');
@@ -48,8 +49,12 @@
           console.log('ended');
           isPlaying=false;
         });
-        popcorn.on('error',function(){
-          console.log('error');
+        popcorn.on('error',function(event){
+          // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html#error-codes
+          if(event.srcElement.error.code!=4){
+            console.log('error');
+            console.log(event.srcElement.error);
+          }
         });
         popcorn.on('loadeddata',function(){
           //console.log('loadeddata');
@@ -62,12 +67,11 @@
           isPlaying=true;
         });
         popcorn.on('progress',function(event){
-          console.log(currentVid.path);
-          console.log($('#video')[0].currentTime);
+          //console.log(currentVid.path);
+          //console.log($('#video')[0].currentTime);
         });
         popcorn.on('suspend',function(){
           //console.log('suspend');
-          isPlaying=false;
         });
         popcorn.on('waiting',function(){
           console.log('waiting');
@@ -86,8 +90,10 @@
         });
       };
       now.cVidSearch=function(vid){
-        console.log(vid);
+        // sets currentVid variable (called from sVidSearch(url))
         currentVid=vid;
+        //console.log('cVidSearch');
+        //console.log(currentVid);
       };
       function buildDivTree(obj,parentDiv,isDir){
         var div={};
@@ -117,7 +123,7 @@
           }); // end click function
         }
         else{
-          div=jQuery('<div/>',{text:obj.name+' (mime: '+obj.mime+')'}).appendTo(parentDiv);
+          div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv);
           div.addClass('vidDiv');
           div.on('click',function(event){
             event.stopPropagation();
@@ -125,19 +131,42 @@
             popcorn.load();
             popcorn.play();
             now.sVidSearch(decodeURI(popcorn.media.currentSrc));
-            recTimePlayed(currentVid);
+            recTimePlayed(obj);
           });
         }
       }
       function recTimePlayed(vid){
+        console.log(getPlayStatus());
         if(isPlaying){
           console.log('recTimePlayed');
           //now.sRecTimePlayed(vid,$('#video')[0].currentTime);
           vid.timePlayed=$('#video')[0].currentTime;
-          now.sUpdateVid(vid);
+          console.log(vid.url+' at '+vid.timePlayed);
+          now.sBackup(top);
           setTimeout(recTimePlayed,10000);
         }
       }
+      /*
+      function recTimePlayed(){
+        console.log(getPlayStatus());
+        if(getPlayStatus()){
+          console.log('recTimePlayed');
+          //now.sRecTimePlayed(vid,$('#video')[0].currentTime);
+          currentVid.timePlayed=$('#video')[0].currentTime;
+          console.log(currentVid.url+' at '+currentVid.timePlayed);
+          now.sBackup(top);
+          setTimeout(recTimePlayed,10000);
+        }
+      }
+      */
+      /*
+      function vidSearchWait(){
+        if(getSearchCount()>0){
+          console.log('waiting on vidSearch');
+          setTimeout(vidSearchWait, 200);
+        }
+      }
+      */
       //$('#userAgent').text(navigator.userAgent);
       if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
         $('body')[0].style.background='#39414A';
@@ -145,6 +174,15 @@
         $('#video')[0].style.display='none';
       }
     });
+    function getPlayStatus(){
+      return isPlaying;
+    }
+    function toggleVolume(vol){
+      if(vol!=0){
+        volume=document.getElementById('video').volume;
+        document.getElementById('video').volume=0;
+      }else document.getElementById('video').volume=volume;
+    }
     //document.addEventListener('DOMContentLoaded',function(){},false);
     </script>
   </head>
@@ -157,6 +195,7 @@
       <button onclick="document.getElementById('video').play()">Play</button>
       <button onclick="document.getElementById('video').pause()">Pause</button>
       <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
+      <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
       <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
       <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button>
     </div>
