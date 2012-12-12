@@ -147,7 +147,7 @@ if(!localStorage.getItem('top')){
   emitter.on('end',function(){
     console.log('dirwalk done');
     sortDir(top);
-    console.log(JSON.stringify(top));
+    console.log(JSON.stringify(top,null,2));
     localStorage.setItem('top',JSON.stringify(top));
     //waitforDefined(_sVidSearch('http://wiivid:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
     //omdbFindVid(_sVidSearch('http://wiivid:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
@@ -170,7 +170,7 @@ function omdbFindVid(vid){
     var year='';
     var reqUrl='';
     if(vid.path.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}\s-\s/)){
-      // is in episodes folder (name is [series] - [SEnum] - title)
+      // is in episodes folder (name is [series] - [num] - title)
       series=vid.name.substring(0,vid.name.indexOf('-')-1);
       title=vid.name.substring(vid.name.lastIndexOf('-')+2,vid.name.length);
     }
@@ -224,14 +224,18 @@ function omdbFindVid(vid){
     }
   }
 }
-everyone.now.sBackup=function(top){
-  /*
-  console.log('playing '+vid.name+' at '+val);
-  var thisVid=_sVidSearch(vid.url);
+everyone.now.sBackup=function(data,vid){
+  console.log(vid.name+': '+vid.timePlayed);
+  //console.log(vid.url);
+  var currentVid=_sVidSearch(vid.url);
   var parentPath=vid.path.substring(0,vid.path.lastIndexOf('/'));
   var parent=dirSearch(parentPath,top.subdirs);
-  parent.vids.splice(parent.vids.indexOf(thisVid),0,vid);
-  */
+  var index=parent.vids.indexOf(currentVid);
+  //console.log(index+'/'+parent.vids.length);
+  //console.log(JSON.stringify(parent.vids[index],null,2));
+  parent.vids.splice(parent.vids.indexOf(currentVid),1,vid);
+  //console.log('length: '+parent.vids.length);
+  //console.log(JSON.stringify(parent.vids,null,2));
   localStorage.setItem('top',JSON.stringify(top));
 };
 everyone.now.sGetList=function(){
@@ -263,13 +267,13 @@ function addResult(result){
 everyone.now.sVidSearch=function(url){
   everyone.now.cVidSearch(_sVidSearch(url));
 };
-function _sVidSearch(url){
+function _sVidSearch(url,array){
   /*
    * created as a wrapper to the vidSearch function to handle an array of results
    */
   results=new Array();
   var result=-1;
-  vidSearch(url);
+  vidSearch(url,array);
   //vidSearchWait();
   for(var i=0;i<results.length;i++){
     //console.log(results[i]);

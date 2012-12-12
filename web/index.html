@@ -9,11 +9,11 @@
     <script src="http://popcornjs.org/code/dist/popcorn-complete.js"></script>
     <script>
     //var mediapath='../video';
-    //var progress=0;
-    //var playing=false;
+    var data=-1;
+    var playing=false;
     var currentVid=-1;
-    var isPlaying=false;
     var volume=0;
+    var tempvar;
     $(document).ready(function(){
       var popcorn=Popcorn('#video');
       now.ready(function(){
@@ -27,6 +27,9 @@
           */
         });
         // http://popcornjs.org/popcorn-docs/events/
+        popcorn.on('abort',function(){
+          console.log('abort');
+        });
         popcorn.on('dataunavailable',function(){
           console.log('dataunavailable');
         });
@@ -35,7 +38,6 @@
         });
         popcorn.on('ended',function(){
           console.log('video has ended');
-          playing=false;
         });
         popcorn.on('emptied',function(){
           console.log('emptied');
@@ -43,43 +45,48 @@
         });
         popcorn.on('empty',function(){
           console.log('empty');
-          isPlaying=false;
         });
         popcorn.on('ended',function(){
           console.log('ended');
-          isPlaying=false;
         });
         popcorn.on('error',function(event){
           // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html#error-codes
-          if(event.srcElement.error.code!=4){
+          //if(event.srcElement.error.code!=4){
             console.log('error');
             console.log(event.srcElement.error);
-          }
+          //}
         });
         popcorn.on('loadeddata',function(){
-          //console.log('loadeddata');
+          console.log('loadeddata');
         });
         popcorn.on('loadedmetadata',function(){
-          //console.log('loadedmetadata');
+          console.log('loadedmetadata');
+          setTimePlayed();
+        });
+        popcorn.on('pause',function(){
+          console.log('pause');
+          playing=false;
         });
         popcorn.on('playing',function(event){
           console.log('playing');
-          isPlaying=true;
+          playing=true;
+          
         });
         popcorn.on('progress',function(event){
-          //console.log(currentVid.path);
-          //console.log($('#video')[0].currentTime);
+          //console.log('progress');
         });
         popcorn.on('suspend',function(){
           //console.log('suspend');
         });
+        popcorn.on('timeupdate',function(){
+          //console.log('timeupdate');
+        });
         popcorn.on('waiting',function(){
           console.log('waiting');
-          isPlaying=false;
         });
       });
       now.cCreateDirectoryList=function(tree){
-        //console.log(tree);
+        data=tree;
         $('#list').empty();
         $.each(tree.subdirs,function(key,obj){
           if(obj.subdirs!=undefined)buildDivTree(obj,$('#list'),true);
@@ -89,12 +96,14 @@
           buildDivTree(obj,$('#list'),false);
         });
       };
+      /*
       now.cVidSearch=function(vid){
         // sets currentVid variable (called from sVidSearch(url))
         currentVid=vid;
         //console.log('cVidSearch');
         //console.log(currentVid);
       };
+      */
       function buildDivTree(obj,parentDiv,isDir){
         var div={};
         if(isDir){
@@ -127,56 +136,39 @@
           div.addClass('vidDiv');
           div.on('click',function(event){
             event.stopPropagation();
+            // set currentVid
+            //now.sVidSearch(decodeURI(popcorn.media.currentSrc));
+            currentVid=obj;
             $($('video').children()[0]).attr('src',obj.url);
             popcorn.load();
             popcorn.play();
-            now.sVidSearch(decodeURI(popcorn.media.currentSrc));
-            recTimePlayed(obj);
+            saveTimePlayed();
+            tempvar=popcorn;
           });
         }
       }
-      function recTimePlayed(vid){
-        console.log(getPlayStatus());
-        if(isPlaying){
-          console.log('recTimePlayed');
-          //now.sRecTimePlayed(vid,$('#video')[0].currentTime);
-          vid.timePlayed=$('#video')[0].currentTime;
-          console.log(vid.url+' at '+vid.timePlayed);
-          now.sBackup(top);
-          setTimeout(recTimePlayed,10000);
-        }
+      function setTimePlayed(){
+        $('#video')[0].currentTime=currentVid.timePlayed;
+        //popcorn.media.currentTime=currentVid.timePlayed;
       }
-      /*
-      function recTimePlayed(){
-        console.log(getPlayStatus());
-        if(getPlayStatus()){
-          console.log('recTimePlayed');
-          //now.sRecTimePlayed(vid,$('#video')[0].currentTime);
+      function saveTimePlayed(){
+        if(playing){
           currentVid.timePlayed=$('#video')[0].currentTime;
-          console.log(currentVid.url+' at '+currentVid.timePlayed);
-          now.sBackup(top);
-          setTimeout(recTimePlayed,10000);
+          //console.log('saving time');
+          now.sBackup(data,currentVid);
         }
+        setTimeout(saveTimePlayed,3000);
       }
-      */
-      /*
-      function vidSearchWait(){
-        if(getSearchCount()>0){
-          console.log('waiting on vidSearch');
-          setTimeout(vidSearchWait, 200);
-        }
-      }
-      */
       //$('#userAgent').text(navigator.userAgent);
       if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
         $('body')[0].style.background='#39414A';
         $('body')[0].style.color='#FFFFFF';
         $('#video')[0].style.display='none';
+      }else{
+        $('body')[0].style.background='#39414A';
+        $('body')[0].style.color='#FFFFFF';
       }
     });
-    function getPlayStatus(){
-      return isPlaying;
-    }
     function toggleVolume(vol){
       if(vol!=0){
         volume=document.getElementById('video').volume;
@@ -197,7 +189,8 @@
       <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
       <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
       <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
-      <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button>
+      <!-- <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button> -->
+      <button onclick="document.getElementById('video').pause();">Stop</button>
     </div>
     <div id="footnote"></div>
     <div id="list">
