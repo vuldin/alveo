@@ -14,8 +14,11 @@
     var currentVid=-1;
     var volume=0;
     var tempvar;
+    var popcorn=-1;
     $(document).ready(function(){
-      var popcorn=Popcorn('#video');
+      popcorn=Popcorn('#video');
+      popcorn.video.height=$(window).height()/3;
+      popcorn.video.width=popcorn.video.height*1.8;
       now.ready(function(){
         now.sGetList();
         popcorn.footnote({
@@ -89,7 +92,8 @@
         data=tree;
         $('#list').empty();
         $.each(tree.subdirs,function(key,obj){
-          if(obj.subdirs!=undefined)buildDivTree(obj,$('#list'),true);
+          //if(obj.subdirs!=undefined)buildDivTree(obj,$('#list'),true);
+          if(obj.subdirs!=undefined)buildDivTree(obj,$('#toplevelDirs'),true);
         });
         // handle top level videos
         $.each(tree.vids,function(key,obj){
@@ -107,28 +111,25 @@
       function buildDivTree(obj,parentDiv,isDir){
         var div={};
         if(isDir){
-          div=jQuery('<div/>',{text:obj.name+' (subdirs: '+obj.subdirs.length+', vids: '+obj.vids.length+')'}).appendTo(parentDiv);
+          //div=jQuery('<div/>',{text:obj.name+' (subdirs: '+obj.subdirs.length+', vids: '+obj.vids.length+')'}).appendTo(parentDiv);
+          div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv);
           div.addClass('dirDiv');
-          var togglediv=jQuery('<div/>',{}).addClass('toggleDiv');
-          var subdirsdiv=jQuery('<div/>',{}).addClass('subdirsDiv');
+          //var togglediv=jQuery('<div/>',{}).addClass('toggleDiv');
+          var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
           var vidsdiv=jQuery('<div/>',{}).addClass('vidsDiv');
           div.on('click',function(event){
-            event.stopPropagation();
-            if(subdirsdiv[0].children.length==0&&vidsdiv[0].children.length==0){
-              togglediv.appendTo(div);
-              subdirsdiv.appendTo(togglediv);
-              vidsdiv.appendTo(togglediv);
-              $.each(obj.subdirs,function(key,subdir){
-                buildDivTree(subdir,subdirsdiv,true);
-              });
-              $.each(obj.vids,function(key,vid){
-                buildDivTree(vid,vidsdiv,false);
-              });
-            }else{
-              subdirsdiv.empty().remove();
-              vidsdiv.empty().remove();
-              togglediv.empty().remove();
-            }
+            console.log(parentDiv.nextAll());
+            parentDiv.nextAll().empty();
+            parentDiv.nextAll().remove();
+            subdirsdiv.appendTo(parentDiv.parent());
+            $('#list').empty();
+            vidsdiv.appendTo('#list');
+            $.each(obj.subdirs,function(key,subdir){
+              buildDivTree(subdir,subdirsdiv,true);
+            });
+            $.each(obj.vids,function(key,vid){
+              buildDivTree(vid,vidsdiv,false);
+            });
           }); // end click function
         }
         else{
@@ -179,22 +180,26 @@
     </script>
   </head>
   <body>
-    <video id="video" height="180" width="300" controls>
+    <div id="banner">
+      <div id="toplevelDirs" class="dirsDiv"></div>
+    </div>
+    <div id="content">
+      <div id="vidcontrols" style="display:none;">
+        <button onclick="document.getElementById('video').play()">Play</button>
+        <button onclick="document.getElementById('video').pause()">Pause</button>
+        <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
+        <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
+        <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
+        <!-- <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button> -->
+        <button onclick="document.getElementById('video').pause();">Stop</button>
+      </div>
+      <div id="recent"></div>
+      <div id="list"></div>
+      <div id="footnote"></div>
+    </div>
+    <video id="video" controls>
       <source src=""></source>
       Please update your browser (video element is unsupported).
     </video>
-    <div>
-      <button onclick="document.getElementById('video').play()">Play</button>
-      <button onclick="document.getElementById('video').pause()">Pause</button>
-      <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
-      <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
-      <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
-      <!-- <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button> -->
-      <button onclick="document.getElementById('video').pause();">Stop</button>
-    </div>
-    <div id="footnote"></div>
-    <div id="list">
-      <span>Your list is empty.</span>
-    </div>
   </body>
 </html>

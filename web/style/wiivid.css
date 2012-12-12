@@ -4,3 +4,26 @@
 .vidDiv{
   padding-left:10px;
 }
+.dirsDiv{
+	float:left;
+	background-image:-webkit-linear-gradient(top,#3B7A45,#3B7A45);
+}
+.dirDiv{
+	margin:2px 5px 2px 5px;
+}
+body{
+	margin:0px;
+}
+#banner{
+	height:100px;
+}
+#content{
+	position:absolute;
+  z-index:-1;
+top:70px;
+}
+#video{
+	position: absolute;
+  bottom: 0;
+  right: 0;
+}
