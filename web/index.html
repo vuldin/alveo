@@ -6,121 +6,76 @@
     <meta name="viewport" content="minimum-scale=1,initial-scale=1,maximum-scale=1,user-scalable=no">
     <link href="style/wiivid.css" rel="stylesheet" type="text/css">
     <!-- <script src="http://code.jquery.com/jquery-latest.min.js"></script> -->
+    <!--
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
-    <script src="/nowjs/now.js"></script>
     <script src="http://popcornjs.org/code/dist/popcorn-complete.js"></script>
+    -->
+    <script src="js/jquery.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="js/popcorn-complete.js"></script>
+    <script src="/nowjs/now.js"></script>
     <script>
-    //var mediapath='../video';
-    var data=-1;
-    var recent=-1;
+    var data=-1; // main data containing all directory and video information
+    var recent=-1; // recently played video url list
+    var vidDetails=-1; // result from server of a request for video metadata
     var vidSearchResults=new Array();
     var playing=false;
     var currentVid=-1;
     var volume=0;
-    //var tempvar;
     var popcorn=-1;
-    var needResponse=false;
     $(document).ready(function(){
       popcorn=Popcorn('#video');
+      addPopcornEvents();
       initLayout();
       resizePage();
-      /*
-      $('#content').height($(window).height()-$('#banner').height());
-      $('#list').height($('#content').height()-$('#recent').height());
-      popcorn.video.height=$(window).height()/3;
-      popcorn.video.width=popcorn.video.height*1.8;
-      */
       now.ready(function(){
-        now.sGetList();
+        now.sGetData();
         now.sGetRecent();
         initData();
-        showRecent();
-        // http://popcornjs.org/popcorn-docs/events/
-        popcorn.on('abort',function(){
-          console.log('abort');
-        });
-        popcorn.on('dataunavailable',function(){
-          console.log('dataunavailable');
-        });
-        popcorn.on('durationchange',function(){
-          console.log('durationchange');
-        });
-        popcorn.on('ended',function(){
-          console.log('video has ended');
-        });
-        popcorn.on('emptied',function(){
-          console.log('emptied');
-          playing=false;
-        });
-        popcorn.on('empty',function(){
-          console.log('empty');
-        });
-        popcorn.on('ended',function(){
-          console.log('ended');
-        });
-        popcorn.on('error',function(event){
-          // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html#error-codes
-          console.log('error');
-          console.log(event.srcElement.error);
-        });
-        popcorn.on('loadeddata',function(){
-          console.log('loadeddata');
-        });
-        popcorn.on('loadedmetadata',function(){
-          console.log('loadedmetadata');
-          setTimePlayed();
-        });
-        popcorn.on('pause',function(){
-          console.log('pause');
-          playing=false;
-        });
-        popcorn.on('playing',function(event){
-          console.log('playing');
-          playing=true;
-          
-        });
-        popcorn.on('progress',function(event){
-          //console.log('progress');
-        });
-        popcorn.on('suspend',function(){
-          //console.log('suspend');
-        });
-        popcorn.on('timeupdate',function(){
-          //console.log('timeupdate');
-        });
-        popcorn.on('waiting',function(){
-          console.log('waiting');
-        });
+        createDirectoryList();
+        createRecent();
       });
       now.cGetData=function(val){
         data=val;
       }
-      now.cCreateDirectoryList=function(tree){
-        pageConsole('cCreateDirectoryList called from '+now.core.clientId);
-        data=tree;
-        $('#toplevelDirs').empty();
-        $('#toplevelDirs').nextAll().empty();
-        $('#toplevelDirs').nextAll().remove();
-        $('#vidsDiv').empty();
-        $.each(tree.subdirs,function(key,obj){
-          if(obj.subdirs!=undefined)buildDivTree(obj,$('#toplevelDirs'),true);
-        });
-        // handle top level videos
-        /*
-        $.each(tree.vids,function(key,obj){
-          buildDivTree(obj,$('#list'),false);
-        });
-        */
-      };
       now.cGetRecent=function(val){
         recent=val;
+      }
+      now.cGetVidDetails=function(val){
+        vidDetails=val;
+      }
+      function initData(){
+        if(recent==-1||data==-1){
+          setTimeout(initData,100);
+        }else console.log('data initialized');
+      }
+      function createDirectoryList(){
+        if(data==-1)setTimeout(createDirectoryList,100);
+        else{
+          $('#toplevelDirs').empty();
+          $('#toplevelDirs').nextAll().empty();
+          $('#toplevelDirs').nextAll().remove();
+          $('#vidsDiv').empty();
+          $.each(data.subdirs,function(key,dir){
+            if(dir.subdirs!=undefined)buildDivTree(dir,$('#toplevelDirs'),true);
+          });
+        }
+      };
+      function createRecent(){
+        if(recent==-1||data==-1)setTimeout(createRecent,100);
+        else{
+          $('#vidsDiv').empty();
+          $.each(recent.vids,function(key,vidurl){
+            var vid=vidSearch(vidurl);
+            buildDivTree(vid,$('#vidsDiv')[0],false);
+          });
+        }
       }
       function vidSearch(url,array){
         //vidSearchResults=new Array();
         var result=-1;
         _vidSearch(url,array);
-        //for(var i=0;i<vidSearchResults.length;i++){
         $.each(vidSearchResults,function(key,val){
           if(val!=undefined)result=val;
         });
@@ -128,20 +83,14 @@
       }
       function _vidSearch(url,array){
         if(array==undefined)array=data.subdirs;
-        //console.log('_vidSearch: '+url);
-        //console.log(JSON.stringify(array));
-        for(var i=0;i<array.length;i++){
-          if(url.indexOf(array[i].url)>-1){
-            //console.log('found directory: '+array[i].url);
-            for(var j=0;j<array[i].vids.length;j++){
-              if(url==array[i].vids[j].url){
-                //console.log('found match');
-                addVidResult(array[i].vids[j]);
-              }
-            }
-            vidSearch(url,array[i].subdirs);
+        $.each(array,function(dirkey,dir){
+          if(url.indexOf(dir.url)>-1){
+            $.each(dir.vids,function(vidkey,vid){
+              if(url==vid.url)addVidResult(vid);
+            });
+            vidSearch(url,dir.subdirs);
           }
-        }
+        });
       }
       function addVidResult(val){
         vidSearchResults.push(val);
@@ -183,15 +132,8 @@
           div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
           div.on('click',function(event){
             event.stopPropagation();
-            // handle WiiU window size change 
-            if(navigator.userAgent.indexOf('Nintendo WiiU')>0)resizePage();
-            currentVid=obj;
-            $($('video').children()[0]).attr('src',obj.url);
-            popcorn.load();
-            popcorn.play();
-            now.sAddRecent(obj.url);
-            saveTimePlayed();
-            tempvar=popcorn;
+            //showVidDetails(obj);
+            playVid(obj);
           });
           div.on('dragstart',function(){
             console.log('dragstart');
@@ -203,22 +145,19 @@
           });
         }
       }
-      function initData(){
-        //console.log(recent+' and '+data);
-        if(recent==-1||data==-1){
-          setTimeout(initData,100);
-        }else console.log('data initialized');
+      function showVidDetails(vid){
+        $('#vidDetails').empty();
+        vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
       }
-      function showRecent(){
-        if(recent==-1||data==-1)setTimeout(showRecent,100);
-        else{
-          $('#vidsDiv').empty();
-          //console.log('recent vids length: '+recent.vids.length);
-          $.each(recent.vids,function(key,vidurl){
-            var vid=vidSearch(vidurl);
-            buildDivTree(vid,$('#vidsDiv')[0],false);
-          });
-        }
+      function playVid(vid){
+        // handle WiiU window size change 
+        if(navigator.userAgent.indexOf('Nintendo WiiU')>0)resizePage();
+        currentVid=vid;
+        $($('video').children()[0]).attr('src',vid.url);
+        popcorn.load();
+        popcorn.play();
+        now.sAddRecent(vid.url);
+        setTimePlayed();
       }
       function addDirEvents(){
         // touchstart, touchend, touchmove, touchcancel
@@ -227,17 +166,11 @@
         // touchstart, touchend, touchmove, touchcancel
       }
       function setTimePlayed(){
-        $('#video')[0].currentTime=currentVid.timePlayed;
-        //popcorn.media.currentTime=currentVid.timePlayed;
-      }
-      function saveTimePlayed(){
         if(playing){
-          currentVid.timePlayed=$('#video')[0].currentTime;
-          //console.log('saving time');
-          //now.sBackup(data,currentVid);
+          currentVid.timePlayed=popcorn.media.currentTime;
           now.sBackup(currentVid);
         }
-        setTimeout(saveTimePlayed,3000);
+        setTimeout(setTimePlayed,3000);
       }
     });
     window.onresize=function(){
@@ -256,13 +189,6 @@
         if($('#toplevelDirs').nextAll().last().children().not('.hiddenDir').length==1){
           console.log($('#toplevelDirs').nextAll().last().children().not('.hiddenDir'));
         }
-        /*
-        // display vids 
-        $('#vidsDiv').empty();
-        $.each(subdir.vids,function(key,vid){
-          buildDivTree(vid,$('#vidsDiv')[0],false);
-        });
-        */
       });
       $('#vidsDiv').draggable({axis:'y'});
       $('#vidsDiv').on('dragstart',function(event){
@@ -297,6 +223,64 @@
       popcorn.video.height=$(window).height()/3;
       popcorn.video.width=popcorn.video.height*1.8;
       //$('#userAgent').text(navigator.userAgent); 
+    }
+    function addPopcornEvents(){
+      // http://popcornjs.org/popcorn-docs/events/
+      popcorn.on('abort',function(){
+        console.log('abort');
+      });
+      popcorn.on('dataunavailable',function(){
+        console.log('dataunavailable');
+      });
+      popcorn.on('durationchange',function(){
+        console.log('durationchange');
+      });
+      popcorn.on('ended',function(){
+        console.log('video has ended');
+      });
+      popcorn.on('emptied',function(){
+        console.log('emptied');
+        playing=false;
+      });
+      popcorn.on('empty',function(){
+        console.log('empty');
+      });
+      popcorn.on('ended',function(){
+        console.log('ended');
+      });
+      popcorn.on('error',function(event){
+        // http://www.whatwg.org/specs/web-apps/current-work/multipage/the-video-element.html#error-codes
+        console.log('error');
+        console.log(event.srcElement.error);
+      });
+      popcorn.on('loadeddata',function(){
+        console.log('loadeddata');
+      });
+      popcorn.on('loadedmetadata',function(){
+        console.log('loadedmetadata');
+        popcorn.media.currentTime=currentVid.timePlayed;
+      });
+      popcorn.on('pause',function(){
+        console.log('pause');
+        playing=false;
+      });
+      popcorn.on('playing',function(event){
+        console.log('playing');
+        playing=true;
+        
+      });
+      popcorn.on('progress',function(event){
+        //console.log('progress');
+      });
+      popcorn.on('suspend',function(){
+        //console.log('suspend');
+      });
+      popcorn.on('timeupdate',function(){
+        //console.log('timeupdate');
+      });
+      popcorn.on('waiting',function(){
+        console.log('waiting');
+      });
     }
     function pageConsole(text){
       jQuery('<div/>',{
@@ -334,6 +318,7 @@
           <source src=""></source>
           Please update your browser (video element is unsupported).
         </video>
+        <div id="vidDetails">No metadata has been found for this video.</div>
       </div>
       <div id="vidcontrols" style="display:none;">
         <button onclick="document.getElementById('video').play()">Play</button>

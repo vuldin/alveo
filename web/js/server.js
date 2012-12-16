@@ -240,7 +240,7 @@ function omdbFindVid(vid){
     // vid has omdb metadata
     if(vid.omdb!=-1)console.log('local result: '+vid.omdb.Plot);
     if(vid.omdbResults!=-1){
-      console.log('local multiple results');
+      console.log('multiple local results');
       console.log(vid.omdbResults);
     }
     if(vid.omdbError!=-1){
@@ -250,7 +250,7 @@ function omdbFindVid(vid){
 }
 //everyone.now.sBackup=function(data,vid){
 everyone.now.sBackup=function(vid){
-  console.log(vid.name+': '+vid.timePlayed);
+  //console.log(vid.name+': '+vid.timePlayed);
   //console.log(vid.url);
   var currentVid=_sVidSearch(vid.url);
   var parentPath=vid.path.substring(0,vid.path.lastIndexOf('/'));
@@ -282,12 +282,12 @@ everyone.now.sAddRecent=function(vidurl){
   localStorage.setItem('recent',JSON.stringify(recent));
 };
 everyone.now.sGetRecent=function(){
-  console.log('recent: '+JSON.stringify(recent,null,2));
+  //console.log('recent: '+JSON.stringify(recent,null,2));
   everyone.now.cGetRecent(recent);
 }
-everyone.now.sGetList=function(){
+everyone.now.sGetData=function(){
   //callback only to the client that sent the request
-  everyone.now.cCreateDirectoryList(top);
+  everyone.now.cGetData(top);
 };
 function dirSearch(path,array){
   //console.log('search request: '+path);
