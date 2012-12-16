@@ -1,29 +1,94 @@
 .toggleDiv{
 	padding-left:10px;
 }
+.vidsDiv{
+	height:1000px;
+}
 .vidDiv{
-  padding-left:10px;
+  padding:10px;
+  margin:5px;
+  /* background:#373F40; */
+  background-image: -webkit-radial-gradient(center, ellipse farthest-corner, #373F40 0%, #373F40 50%, #292929 100%);
+  border:2px solid;
+  /* border-color:#00191E !important; */
+  border-color:black !important;
+  border-radius:10px;
+  width:108px;
+  height:120px;
+  float:left;
+  overflow:hidden;
+  text-align:center;
 }
 .dirsDiv{
 	float:left;
-	background-image:-webkit-linear-gradient(top,#3B7A45,#3B7A45);
+	/* background-image:-webkit-linear-gradient(top,#02ABCA,#02ABCA); */
+	background:#02ABCA;
+	border-color:#00191E !important;
+	border-right:2px solid;
+	border-bottom:2px solid;
+	border-bottom-right-radius: 10px;
 }
 .dirDiv{
-	margin:2px 5px 2px 5px;
+	/* total height= 45 = 29 + 6 + 6 + 2 + 2 */
+	height:29px;
+	padding:6px 9px 6px 9px;
+  border-color:#00191E !important;
+  border-top:2px solid;
+  border-left:2px solid;
 }
 body{
 	margin:0px;
+	overflow:hidden;
+	/* background:#39414A; */
+  color:#DEEEEE;
+  background:#242424;
 }
 #banner{
-	height:100px;
+	width:100%;
+	height:45px;
+	font-size:25px;
+	/* background-image:-webkit-linear-gradient(top,black,#122500); */
+	background:#131313;
 }
 #content{
 	position:absolute;
   z-index:-1;
-top:70px;
+  /* top:70px; */
+  background-image: -webkit-radial-gradient(center, ellipse farthest-corner, #39414A 0%, #39414A 50%, #242424 100%);
+  width:100%;
+}
+#list{
+	overflow:hidden;
+}
+#footer{
+	/* width:100%; */
+	height:43px;
+  /* background-image:-webkit-linear-gradient(top,#122500,black); */
+  background:#131313;
+  position:absolute;
+  margin:0px 10px 0px 10px;
+  border-color:#00191E !important;
+  border-left:2px solid;
+  border-top:2px solid;
+  border-right:2px solid;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+#console{
+	padding:5px 0px 5px 5px;
+	position:absolute;
+	top:0;
+	right:0;
+	background-color:rgba(40,40,40,0.8);
+}
+#fullscreen{
+	display:none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
 }
 #video{
-	position: absolute;
-  bottom: 0;
-  right: 0;
+}
+.hiddenDir{
+	display:none;
 }

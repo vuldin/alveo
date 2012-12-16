@@ -30,21 +30,38 @@ mediaserver.on('connection',function(client){
 });
 */
 var mediaserverUrl="http://wiivid:9000/";
-var server=require('http').createServer(function(req,response){
+var server=require('http').createServer(function(req,resp){
   var path=req.url,
       contentType='';
-  if(path=='/'){
-    path='/index.html';
-  }
+  if(path=='/')path='/index.html';
+  path='..'+path;
   contentType=mime.lookup(path);
   //console.log(path+'\t'+contentType);
-  fs.readFile('..'+path,function(err,content){
-    response.writeHead(200,{'Content-Type':contentType});
-    response.write(content);
-    response.end();
-  });
   //console.log(req.headers['user-agent']);
-});
+  /*
+  if(req.method!=='GET'){
+    resp.writeHead(400);
+    resp.end();
+    return;
+  }
+  var stream=fs.createReadStream(path);
+  stream.on('error',function(){
+    resp.writeHead(404,{'Content-Type':'text/plain'});
+    resp.write('404 Not Found\n');
+    resp.end();
+  });
+  stream.once('fd',function(){
+    req.writeHead(200,{'Content-Type':contentType});
+  });
+  stream.pipe(resp);
+  */
+  fs.readFile(path,function(err,content){
+    resp.writeHead(200,{'Content-Type':contentType});
+    //resp.write(content);
+    resp.end(content,'utf-8');
+  });
+}).listen(8888);
+console.log('running at http://127.0.0.1:8888/');
 /*
 // https://groups.google.com/forum/?fromgroups=#!topic/nodejs/gzng3IJcBX8
 var range=request.headers.range;
@@ -58,9 +75,9 @@ var chunksize=(end-start)+1;
 response.writeHead(206,{'Content-Range':'bytes '+start+'-'+end+'/'+total,'Accept-Ranges':'bytes','Content-Length':chunksize,'Content-Type':type});
 response.end(file.slice(start,end),'binary'); 
 */
-server.listen(8888);
-console.log('running at http://127.0.0.1:8888/');
 var everyone = nowjs.initialize(server);
+var top=null;
+var recent=new Array();
 //var options={"follow_symlinks":true,"max_depth:":1};
 if(typeof localStorage==='undefined'||localStorage===null){
   var LocalStorage=require('node-localstorage').LocalStorage;
@@ -69,7 +86,7 @@ if(typeof localStorage==='undefined'||localStorage===null){
 if(!localStorage.getItem('top')){
   var options={"follow_symlinks":true};
   var emitter=walk('../video',options);
-  var top={
+  top={
    'name':'toplevel',
    'path':'../video',
    'url':'http://wiivid:9000/',
@@ -162,6 +179,13 @@ if(!localStorage.getItem('top')){
   //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Star Trek (2009).mp4'));
   //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Inglourious Basterds (2009).mp4'));
 }
+if(!localStorage.getItem('recent')){
+  recent={
+      'vids':new Array()
+  };
+}else{
+  recent=JSON.parse(localStorage.getItem('recent'));
+}
 function omdbFindVid(vid){
   if(vid.omdb==-1&&vid.omdbResults==-1&&vid.omdbError==-1){
     // vid has no omdb metadata
@@ -224,13 +248,14 @@ function omdbFindVid(vid){
     }
   }
 }
-everyone.now.sBackup=function(data,vid){
+//everyone.now.sBackup=function(data,vid){
+everyone.now.sBackup=function(vid){
   console.log(vid.name+': '+vid.timePlayed);
   //console.log(vid.url);
   var currentVid=_sVidSearch(vid.url);
   var parentPath=vid.path.substring(0,vid.path.lastIndexOf('/'));
   var parent=dirSearch(parentPath,top.subdirs);
-  var index=parent.vids.indexOf(currentVid);
+  //var index=parent.vids.indexOf(currentVid);
   //console.log(index+'/'+parent.vids.length);
   //console.log(JSON.stringify(parent.vids[index],null,2));
   parent.vids.splice(parent.vids.indexOf(currentVid),1,vid);
@@ -238,7 +263,30 @@ everyone.now.sBackup=function(data,vid){
   //console.log(JSON.stringify(parent.vids,null,2));
   localStorage.setItem('top',JSON.stringify(top));
 };
+everyone.now.sAddRecent=function(vidurl){
+  //var match=false;
+  //if(recent.length>20)recent.splice(0,1);
+  //$.each(recent,function(key,recentvid){
+  for(var i=0;i<recent.vids.length;i++){
+    if(vidurl==recent.vids[i]){
+      //console.log(vidurl+' already added to recent list at '+i);
+      recent.vids.splice(i,1);
+    }
+  }
+  //if(!match){
+    //recent.push(vid);
+  if(recent.vids.length>1)recent.vids.splice(0,0,vidurl);
+  else recent.vids.push(vidurl);
+  //}
+  //console.log(recent);
+  localStorage.setItem('recent',JSON.stringify(recent));
+};
+everyone.now.sGetRecent=function(){
+  console.log('recent: '+JSON.stringify(recent,null,2));
+  everyone.now.cGetRecent(recent);
+}
 everyone.now.sGetList=function(){
+  //callback only to the client that sent the request
   everyone.now.cCreateDirectoryList(top);
 };
 function dirSearch(path,array){
