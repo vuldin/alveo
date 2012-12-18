@@ -27,11 +27,13 @@
 	border-right:2px solid;
 	border-bottom:2px solid;
 	border-bottom-right-radius: 10px;
+	position:absolute;
+	z-index:999;
 }
 .dirDiv{
 	/* total height= 45 = 29 + 6 + 6 + 2 + 2 */
 	height:29px;
-	padding:6px 9px 6px 9px;
+	padding:6px 9px 6px 15px;
   border-color:#00191E !important;
   border-top:2px solid;
   border-left:2px solid;
@@ -49,6 +51,7 @@ body{
 	font-size:25px;
 	/* background-image:-webkit-linear-gradient(top,black,#122500); */
 	background:#131313;
+	position:relative;
 }
 #content{
 	position:absolute;

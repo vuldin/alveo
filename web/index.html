@@ -19,145 +19,61 @@
     var data=-1; // main data containing all directory and video information
     var recent=-1; // recently played video url list
     var vidDetails=-1; // result from server of a request for video metadata
+    var dirSearchResults=new Array();
     var vidSearchResults=new Array();
     var playing=false;
     var currentVid=-1;
+    var mediaserverUrl=-1;
     var volume=0;
     var popcorn=-1;
     $(document).ready(function(){
+      console.log('document.ready');
       popcorn=Popcorn('#video');
       addPopcornEvents();
       initLayout();
       resizePage();
       now.ready(function(){
+        console.log('now.ready');
         now.sGetData();
         now.sGetRecent();
+        now.sGetMediaServerUrl();
         initData();
         createDirectoryList();
-        createRecent();
+        populateVids();
       });
       now.cGetData=function(val){
+        console.log('new data variable from server');
         data=val;
       }
       now.cGetRecent=function(val){
+        console.log('new recent variable from server');
         recent=val;
       }
       now.cGetVidDetails=function(val){
+        console.log('new vidDetails variable from server');
         vidDetails=val;
+      }
+      now.cGetMediaServerUrl=function(val){
+        console.log('new mediaserverURL variable from server');
+        mediaserverUrl=val;
       }
       function initData(){
         if(recent==-1||data==-1){
           setTimeout(initData,100);
         }else console.log('data initialized');
       }
-      function createDirectoryList(){
-        if(data==-1)setTimeout(createDirectoryList,100);
-        else{
-          $('#toplevelDirs').empty();
-          $('#toplevelDirs').nextAll().empty();
-          $('#toplevelDirs').nextAll().remove();
-          $('#vidsDiv').empty();
-          $.each(data.subdirs,function(key,dir){
-            if(dir.subdirs!=undefined)buildDivTree(dir,$('#toplevelDirs'),true);
-          });
-        }
-      };
-      function createRecent(){
-        if(recent==-1||data==-1)setTimeout(createRecent,100);
-        else{
-          $('#vidsDiv').empty();
-          $.each(recent.vids,function(key,vidurl){
-            var vid=vidSearch(vidurl);
-            buildDivTree(vid,$('#vidsDiv')[0],false);
-          });
-        }
-      }
-      function vidSearch(url,array){
-        //vidSearchResults=new Array();
-        var result=-1;
-        _vidSearch(url,array);
-        $.each(vidSearchResults,function(key,val){
-          if(val!=undefined)result=val;
-        });
-        return result;
-      }
-      function _vidSearch(url,array){
-        if(array==undefined)array=data.subdirs;
-        $.each(array,function(dirkey,dir){
-          if(url.indexOf(dir.url)>-1){
-            $.each(dir.vids,function(vidkey,vid){
-              if(url==vid.url)addVidResult(vid);
-            });
-            vidSearch(url,dir.subdirs);
-          }
-        });
-      }
-      function addVidResult(val){
-        vidSearchResults.push(val);
-      }
-      function buildDivTree(obj,parentDiv,isDir){
-        var div={};
-        if(isDir){
-          div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('dirDiv');
-          div.on('click',function(event){
-            event.stopPropagation();
-            // display dirs 
-            parentDiv.nextAll().empty();
-            parentDiv.nextAll().remove();
-            if(obj.subdirs.length>0){
-              // display subdirs
-              var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
-              subdirsdiv.appendTo(parentDiv.parent());
-              $.each(obj.subdirs,function(key,subdir){
-                buildDivTree(subdir,subdirsdiv,true);
-              });
-            }
-            if(div.siblings().first().hasClass('hiddenDir')){
-              div.siblings().removeClass('hiddenDir');
-              parentDiv.nextAll().empty();
-              parentDiv.nextAll().remove();
-            }else{
-              div.siblings().addClass('hiddenDir');
-            }
-            if(obj.vids.length>0){
-              // display vids 
-              $('#vidsDiv').empty();
-              $.each(obj.vids,function(key,vid){
-                buildDivTree(vid,$('#vidsDiv')[0],false);
-              });
-            }
-          });
-        }
-        else{ // vid 
-          div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
-          div.on('click',function(event){
-            event.stopPropagation();
-            //showVidDetails(obj);
-            playVid(obj);
-          });
-          div.on('dragstart',function(){
-            console.log('dragstart');
-            //clearTimeout(mousedownTimeout);
-          });
-          div.on('mouseup touchend',function(){
-            console.log('mouseup/touchend');
-            //clearTimeout(mousedownTimeout);
-          });
-        }
-      }
       function showVidDetails(vid){
+        // TODO 
         $('#vidDetails').empty();
         vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
-      }
-      function playVid(vid){
-        // handle WiiU window size change 
-        if(navigator.userAgent.indexOf('Nintendo WiiU')>0)resizePage();
-        currentVid=vid;
-        $($('video').children()[0]).attr('src',vid.url);
-        popcorn.load();
-        popcorn.play();
-        now.sAddRecent(vid.url);
-        setTimePlayed();
+        //vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+        var vidombdDiv;
+        if(obj.omdb!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+        if(obj.omdbResults!=-1){
+          /* TODO create div for each result */
+          vidomdbDiv=jQuery('<div/>',{text:obj.omdbResults}).appendTo($('#vidDetails')).addClass('vidDiv');
+        }
+        if(obj.omdbError!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdbError}).appendTo($('#vidDetails')).addClass('vidDiv');
       }
       function addDirEvents(){
         // touchstart, touchend, touchmove, touchcancel
@@ -165,35 +81,216 @@
       function addVidEvents(){
         // touchstart, touchend, touchmove, touchcancel
       }
-      function setTimePlayed(){
-        if(playing){
-          currentVid.timePlayed=popcorn.media.currentTime;
-          now.sBackup(currentVid);
-        }
-        setTimeout(setTimePlayed,3000);
-      }
     });
     window.onresize=function(){
       resizePage();
     }
-    function initLayout(){
-      if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
-        $('#console')[0].style.top='auto';
-        $('#console')[0].style.bottom='0px';
+    function createDirectoryList(){
+      if(data==-1)setTimeout(createDirectoryList,100);
+      else{
+        $('#toplevelDirs').empty();
+        $('#toplevelDirs').nextAll().empty();
+        $('#toplevelDirs').nextAll().remove();
+        $('#vidsDiv').empty();
+        $.each(data.subdirs,function(key,dir){
+          if(dir.subdirs!=undefined)buildDivTree(dir,$('#toplevelDirs'),true);
+        });
+        $('#toplevelDirs').css('width',$('#toplevelDirs').width()); // make toplevelDirs width equal to longest child 
       }
-      $('#banner').on('click',function(event){
-        pageConsole('banner click');
-        $('#toplevelDirs').nextAll().last().empty();
-        $('#toplevelDirs').nextAll().last().remove();
-        var selectedDir=-1;
-        if($('#toplevelDirs').nextAll().last().children().not('.hiddenDir').length==1){
-          console.log($('#toplevelDirs').nextAll().last().children().not('.hiddenDir'));
+    }
+    function populateVids(dir){
+      if(recent==-1||data==-1){
+        setTimeout(populateVids,100);
+      }else{
+        $('#vidsDiv').empty();
+        if(dir!=undefined&&dir!=-1&&dir.vids.length>0){ // given directory contains vids 
+            $.each(dir.vids,function(key,vid){
+              buildDivTree(vid,$('#vidsDiv')[0],false);
+            });
+        }else{ // display recent vids 
+          if(dir!=undefined)jQuery('<div/>',{text:'No videos found in this directory.'}).appendTo($('#vidsDiv')).addClass('noVidsMsgDiv');
+          if(recent.vids>0)jQuery('<div/>',{text:'Recently viewed videos:'}).appendTo($('#vidsDiv')).addClass('RecentVidsMsgDiv');
+          $.each(recent.vids,function(key,vidurl){
+            var vid=vidSearch(vidurl);
+            if(vid.path.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/)){ // is in episodes folder (name is [series] - [num] - title)
+              console.log('episode');
+              var series=vid.name.substring(0,vid.name.indexOf('-')-1);
+              var title=vid.name.substring(vid.name.lastIndexOf('-')+2,vid.name.length);
+              var season=vid.url.substring(0,vid.url.lastIndexOf('/'));
+              season=season.substring(season.lastIndexOf('/')+1,season.length);
+              console.log('series: |'+series+'|');
+              console.log('season: |'+season+'|');
+              console.log('title: |'+title+'|');
+              console.log('timePlayed: '+vid.timePlayed);
+              console.log('duration: '+vid.duration);
+              console.log(Math.floor(vid.duration/vid.timePlayed)+'%');
+              console.log(vid);
+              //vid.name=series;
+              var newvid=jQuery.extend({},vid);
+              newvid.name=series;
+            }
+            buildDivTree(newvid,$('#vidsDiv')[0],false);
+          });
+        }
+      }
+    }
+    function dirSearch(url,array){
+      console.log('dirSearch: '+url);
+      var result=-1;
+      _dirSearch(url,array);
+      $.each(dirSearchResults,function(key,val){
+        if(val!=undefined)result=val;
+      });
+      return result;
+    }
+    function _dirSearch(url,array){
+      if(array==undefined)array=data.subdirs;
+      $.each(array,function(dirkey,dir){
+        console.log(dir.url);
+        //if(url==dir.url+'/')addResult(dir,dirSearchResults);
+        if(url==dir.url)addResult(dir,dirSearchResults);
+        dirSearch(url,dir.subdirs);
+      });
+    }
+    function vidSearch(url,array){
+      var result=-1;
+      _vidSearch(url,array);
+      $.each(vidSearchResults,function(key,val){
+        if(val!=undefined)result=val;
+      });
+      return result;
+    }
+    function _vidSearch(url,array){
+      if(array==undefined)array=data.subdirs;
+      $.each(array,function(dirkey,dir){
+        if(url.indexOf(dir.url)>-1){
+          $.each(dir.vids,function(vidkey,vid){
+            if(url==vid.url)addResult(vid,vidSearchResults);
+          });
+          vidSearch(url,dir.subdirs);
         }
       });
-      $('#vidsDiv').draggable({axis:'y'});
-      $('#vidsDiv').on('dragstart',function(event){
-        pageConsole('list dragstart/touchmove');
+    }
+    function addResult(val,array){
+      array.push(val);
+    }
+    function buildDivTree(obj,parentDiv,isDir){
+      var div={};
+      if(isDir){ // dir 
+        div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('dirDiv');
+        div.on('mouseup',function(event){
+          event.stopPropagation();
+          parentDiv.nextAll().empty();
+          parentDiv.nextAll().remove();
+          if(obj.subdirs.length>0){ // display subdirs 
+            var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
+            subdirsdiv.appendTo(parentDiv.parent());
+            subdirsdiv.css('left',subdirsdiv.prev().width()-6);
+            subdirsdiv.css('z-index',subdirsdiv.prev().css('z-index')-1);
+            $.each(obj.subdirs,function(key,subdir){
+              buildDivTree(subdir,subdirsdiv,true);
+            });
+            //subdirsdiv.css('width',subdirsdiv.width()); // make subdirs width equal to longest child 
+          }
+          if(div.siblings().first().hasClass('hiddenDir')){
+            div.siblings().removeClass('hiddenDir');
+            parentDiv.nextAll().empty();
+            parentDiv.nextAll().remove();
+          }else div.siblings().addClass('hiddenDir');
+          /*
+          if(obj.vids.length>0){ // display vids 
+            $('#vidsDiv').empty();
+            $.each(obj.vids,function(key,vid){
+              buildDivTree(vid,$('#vidsDiv')[0],false);
+            });
+          }
+          */
+          populateVids(obj);
+        });
+      }
+      else{ // vid 
+        div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
+        div.on('mouseup',function(event){
+          event.stopPropagation();
+          //showVidDetails(obj);
+          playVid(obj);
+        });
+        div.on('dragstart',function(){
+          console.log('dragstart');
+          //clearTimeout(mousedownTimeout);
+        });
+        div.on('mouseup touchend',function(){
+          console.log('mouseup/touchend');
+          //clearTimeout(mousedownTimeout);
+        });
+      }
+    }
+    function playVid(obj){
+      // handle WiiU window size change 
+      if(navigator.userAgent.indexOf('Nintendo WiiU')>0)resizePage();
+      //currentVid=vid; // removed so recent objects could be cloned/modified 
+      currentVid=vidSearch(obj.url);
+      $($('video').children()[0]).attr('src',obj.url);
+      popcorn.load();
+      popcorn.play();
+      /*
+      $.each(recent.vids,function(key,vidurl){
+        if(vidurl.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/)){ // is episode 
+          var recentvid=vidSearch(vidurl);
+          if(recentvid.name.substring(0,vid.name.indexOf('-')-1)==obj.name){ // series already found in recent list 
+            //recent.vids.splice(key,1);
+            // TODO sAddRecent determines whether or not to add recent based on url 
+            // need to change xAddRecent to handle adding a series 
+          }
+        }
       });
+      */
+      now.sAddRecent(obj.url);
+      setTimePlayed();
+      setDuration();
+    }
+    function setTimePlayed(){
+      if(!playing)setTimeout(setTimePlayed,3000);
+      else{
+        currentVid.timePlayed=popcorn.media.currentTime;
+        now.sBackup(currentVid);
+      }
+    }
+    function setDuration(){
+      if(!playing)setTimeout(setDuration,2000);
+      else{
+        if(currentVid.duration==0)currentVid.duration=popcorn.media.duration;
+        now.sBackup(currentVid);
+      }
+    }
+    function initLayout(){
+      if(mediaserverUrl==-1){
+        setTimeout(initLayout,500);
+      }else{
+        console.log('initLayout');
+        if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
+          $('#console')[0].style.top='auto';
+          $('#console')[0].style.bottom='0px';
+        }
+        $('#banner').on('mouseup',function(event){
+          event.stopPropagation();
+          pageConsole('banner mouseup');
+          $('#toplevelDirs').nextAll().last().empty();
+          $('#toplevelDirs').nextAll().last().remove();
+          //var selectedDir=-1;
+          var prevurl=mediaserverUrl;
+          $.each($('#toplevelDirs').parent().children().children().not('.hiddenDir'),function(key,val){
+            prevurl+=val.innerHTML+'/';
+          });
+          prevurl=prevurl.substring(0,prevurl.length-1);
+          var prevdir=dirSearch(prevurl);
+          populateVids(prevdir);
+        });
+        $('#vidsDiv').draggable({axis:'y'});
+        $('#vidsDiv').on('dragstart',function(event){
+          pageConsole('list dragstart/touchmove');
+        });
+      }
     }
     function resizePage(){
       //$('body').height($(window).height());
