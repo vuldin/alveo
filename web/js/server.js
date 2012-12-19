@@ -79,7 +79,7 @@ var options={"follow_symlinks":true};
 var emitter=walk('../video',options);
 var everyone = nowjs.initialize(server);
 var data=null;
-var recent=new Array();
+var recent=null;
 var vidSearchResults=new Array();
 //var options={"follow_symlinks":true,"max_depth:":1};
 if(typeof localStorage==='undefined'||localStorage===null){
@@ -295,20 +295,22 @@ everyone.now.sBackup=function(vid){
   localStorage.setItem('data',JSON.stringify(data));
   everyone.now.cGetData(data);
 };
-everyone.now.sAddRecent=function(vidurl){
+everyone.now.sAddRecent=function(recentvid){
+  console.log(recentvid);
   //var match=false;
   //if(recent.length>20)recent.splice(0,1);
   //$.each(recent,function(key,recentvid){
   for(var i=0;i<recent.vids.length;i++){
-    if(vidurl==recent.vids[i]){
+    //if(recentvid.url==recent.vids[i].url&&recentvid.name==recent.vids[i].name){
+    if(recentvid.name==recent.vids[i].name){
       //console.log(vidurl+' already added to recent list at '+i);
       recent.vids.splice(i,1);
     }
   }
   //if(!match){
     //recent.push(vid);
-  if(recent.vids.length>1)recent.vids.splice(0,0,vidurl);
-  else recent.vids.push(vidurl);
+  if(recent.vids.length>1)recent.vids.splice(0,0,recentvid);
+  else recent.vids.push(recentvid);
   //}
   //console.log(recent);
   localStorage.setItem('recent',JSON.stringify(recent));

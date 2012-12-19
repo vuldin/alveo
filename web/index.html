@@ -16,9 +16,10 @@
     <script src="js/popcorn-complete.js"></script>
     <script src="/nowjs/now.js"></script>
     <script>
-    var data=-1; // main data containing all directory and video information
-    var recent=-1; // recently played video url list
-    var vidDetails=-1; // result from server of a request for video metadata
+    var data=-1; // main data containing all directory and video information 
+    var recent=-1; // recently played video url list 
+    var vidDetails=-1; // result from server of a request for video metadata 
+    var vidsDivTop=0;
     var dirSearchResults=new Array();
     var vidSearchResults=new Array();
     var playing=false;
@@ -26,6 +27,8 @@
     var mediaserverUrl=-1;
     var volume=0;
     var popcorn=-1;
+    var mousedownTimeout=null;
+    var drag=false;
     $(document).ready(function(){
       console.log('document.ready');
       popcorn=Popcorn('#video');
@@ -91,51 +94,65 @@
         $('#toplevelDirs').empty();
         $('#toplevelDirs').nextAll().empty();
         $('#toplevelDirs').nextAll().remove();
-        $('#vidsDiv').empty();
         $.each(data.subdirs,function(key,dir){
           if(dir.subdirs!=undefined)buildDivTree(dir,$('#toplevelDirs'),true);
         });
-        $('#toplevelDirs').css('width',$('#toplevelDirs').width()); // make toplevelDirs width equal to longest child 
+        //$('#toplevelDirs').css('width',$('#toplevelDirs').width()); // make toplevelDirs width equal to longest child 
       }
     }
     function populateVids(dir){
       if(recent==-1||data==-1){
         setTimeout(populateVids,100);
       }else{
-        $('#vidsDiv').empty();
+        vidsDivTop=0;
+        vidsDiv=$('#vidsDiv');
+        vidsDiv.css('position','relative');
+        console.log('changing vidsDiv top from '+vidsDiv.css('top')+' to '+$(window).height());
+        vidsDiv.css('top',$(window).height());
+        vidsDiv.css('display','block');
+        vidsDiv.empty();
         if(dir!=undefined&&dir!=-1&&dir.vids.length>0){ // given directory contains vids 
-            $.each(dir.vids,function(key,vid){
-              buildDivTree(vid,$('#vidsDiv')[0],false);
-            });
-        }else{ // display recent vids 
-          if(dir!=undefined)jQuery('<div/>',{text:'No videos found in this directory.'}).appendTo($('#vidsDiv')).addClass('noVidsMsgDiv');
-          if(recent.vids>0)jQuery('<div/>',{text:'Recently viewed videos:'}).appendTo($('#vidsDiv')).addClass('RecentVidsMsgDiv');
-          $.each(recent.vids,function(key,vidurl){
-            var vid=vidSearch(vidurl);
-            if(vid.path.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/)){ // is in episodes folder (name is [series] - [num] - title)
-              console.log('episode');
-              var series=vid.name.substring(0,vid.name.indexOf('-')-1);
-              var title=vid.name.substring(vid.name.lastIndexOf('-')+2,vid.name.length);
-              var season=vid.url.substring(0,vid.url.lastIndexOf('/'));
-              season=season.substring(season.lastIndexOf('/')+1,season.length);
-              console.log('series: |'+series+'|');
-              console.log('season: |'+season+'|');
-              console.log('title: |'+title+'|');
-              console.log('timePlayed: '+vid.timePlayed);
-              console.log('duration: '+vid.duration);
-              console.log(Math.floor(vid.duration/vid.timePlayed)+'%');
-              console.log(vid);
-              //vid.name=series;
-              var newvid=jQuery.extend({},vid);
-              newvid.name=series;
-            }
-            buildDivTree(newvid,$('#vidsDiv')[0],false);
+          $.each(dir.vids,function(key,vid){
+            buildDivTree(vid,vidsDiv,false);
           });
+          setVidsDivHeight();
+        }else{ // display recent vids 
+          if(dir!=undefined){
+            vidsDivTop+=-19;
+            jQuery('<div/>',{text:'No videos found in this directory.'}).appendTo(vidsDiv).addClass('noVidsMsgDiv');
+          }
+          if(recent.vids.length>0){
+            vidsDivTop+=-19;
+            jQuery('<div/>',{text:'Recently viewed videos:'}).appendTo(vidsDiv).addClass('RecentVidsMsgDiv');
+          }
+          $.each(recent.vids,function(key,recentvid){
+            buildDivTree(recentvid,vidsDiv,false);
+          });
+          setVidsDivHeight();
         }
       }
     }
+    function setVidsDivHeight(){
+      var total=0;
+      var vidDivCount=0;
+      for(var i=0;i<vidsDiv.children().length;i++){
+        if($(vidsDiv.children()[i]).hasClass('vidDiv')){
+          if(vidDivCount==0){
+            //console.log('increasing content height by '+$(vidsDiv.children()[i]).outerHeight());
+            total+=$(vidsDiv.children()[i]).outerHeight();
+          }
+          vidDivCount++;
+          if(vidDivCount==13){
+            // TODO base this on window width instead of 13 video divs 
+            vidDivCount=0;
+          }
+        }
+      }
+      vidsDivTop=$('#list').height()/2-total/2+vidsDivTop;
+      if(vidsDivTop<0)vidsDivTop=0;
+      vidsDiv.css('top',vidsDivTop);
+    }
     function dirSearch(url,array){
-      console.log('dirSearch: '+url);
       var result=-1;
       _dirSearch(url,array);
       $.each(dirSearchResults,function(key,val){
@@ -146,8 +163,6 @@
     function _dirSearch(url,array){
       if(array==undefined)array=data.subdirs;
       $.each(array,function(dirkey,dir){
-        console.log(dir.url);
-        //if(url==dir.url+'/')addResult(dir,dirSearchResults);
         if(url==dir.url)addResult(dir,dirSearchResults);
         dirSearch(url,dir.subdirs);
       });
@@ -182,46 +197,39 @@
           event.stopPropagation();
           parentDiv.nextAll().empty();
           parentDiv.nextAll().remove();
+          if(div.siblings().first().hasClass('hiddenDir')){
+            div.siblings().removeClass('hiddenDir');
+            parentDiv.nextAll().empty();
+            parentDiv.nextAll().remove();
+          }else div.siblings().addClass('hiddenDir');
+          console.log('subdirs length: '+obj.subdirs.length);
           if(obj.subdirs.length>0){ // display subdirs 
             var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
             subdirsdiv.appendTo(parentDiv.parent());
-            subdirsdiv.css('left',subdirsdiv.prev().width()-6);
+            var left=subdirsdiv.prev().children().not('.hiddenDir').offset().left+subdirsdiv.prev().width()-6;
+            subdirsdiv.css('left',left);
             subdirsdiv.css('z-index',subdirsdiv.prev().css('z-index')-1);
             $.each(obj.subdirs,function(key,subdir){
               buildDivTree(subdir,subdirsdiv,true);
             });
             //subdirsdiv.css('width',subdirsdiv.width()); // make subdirs width equal to longest child 
           }
-          if(div.siblings().first().hasClass('hiddenDir')){
-            div.siblings().removeClass('hiddenDir');
-            parentDiv.nextAll().empty();
-            parentDiv.nextAll().remove();
-          }else div.siblings().addClass('hiddenDir');
-          /*
-          if(obj.vids.length>0){ // display vids 
-            $('#vidsDiv').empty();
-            $.each(obj.vids,function(key,vid){
-              buildDivTree(vid,$('#vidsDiv')[0],false);
-            });
-          }
-          */
           populateVids(obj);
         });
       }
       else{ // vid 
         div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
+        div.on('mousedown',function(event){
+          mousedownTimeout=setTimeout(function(){
+            drag=false;
+          },1000);
+        });
         div.on('mouseup',function(event){
-          event.stopPropagation();
-          //showVidDetails(obj);
-          playVid(obj);
-        });
-        div.on('dragstart',function(){
-          console.log('dragstart');
-          //clearTimeout(mousedownTimeout);
-        });
-        div.on('mouseup touchend',function(){
-          console.log('mouseup/touchend');
-          //clearTimeout(mousedownTimeout);
+          if(!drag){
+            event.stopPropagation();
+            //showVidDetails(obj);
+            playVid(obj);
+          }
         });
       }
     }
@@ -233,28 +241,28 @@
       $($('video').children()[0]).attr('src',obj.url);
       popcorn.load();
       popcorn.play();
-      /*
-      $.each(recent.vids,function(key,vidurl){
-        if(vidurl.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/)){ // is episode 
-          var recentvid=vidSearch(vidurl);
-          if(recentvid.name.substring(0,vid.name.indexOf('-')-1)==obj.name){ // series already found in recent list 
-            //recent.vids.splice(key,1);
-            // TODO sAddRecent determines whether or not to add recent based on url 
-            // need to change xAddRecent to handle adding a series 
-          }
-        }
-      });
-      */
-      now.sAddRecent(obj.url);
+      var newRecentvid={
+          'name':obj.name,
+          'episode':obj.episode,
+          'url':obj.url
+      }
+      if(obj.lastmod!=undefined){
+        newRecentvid.name=newRecentvid.name.substring(0,newRecentvid.name.indexOf('-')-1);
+      }
+      now.sAddRecent(newRecentvid);
       setTimePlayed();
       setDuration();
     }
+    function isEpisode(val){
+      return val.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/);
+    }
     function setTimePlayed(){
-      if(!playing)setTimeout(setTimePlayed,3000);
-      else{
+      if(playing){
+        console.log('setTimePlayed: '+popcorn.media.currentTime);
         currentVid.timePlayed=popcorn.media.currentTime;
         now.sBackup(currentVid);
       }
+      setTimeout(setTimePlayed,3000);
     }
     function setDuration(){
       if(!playing)setTimeout(setDuration,2000);
@@ -288,8 +296,33 @@
         });
         $('#vidsDiv').draggable({axis:'y'});
         $('#vidsDiv').on('dragstart',function(event){
+          drag=true;
           pageConsole('list dragstart/touchmove');
+          clearTimeout(mousedownTimeout);
+          if($('#toplevelDirs').nextAll().last().children('.hiddenDir').length==0){ // last dirlist isn't being used... remove it 
+            $('#toplevelDirs').nextAll().last().empty();
+            $('#toplevelDirs').nextAll().last().remove();
+            if($('#toplevelDirs').nextAll().length==0){
+              // TODO only toplevel dirlist is left... change it back to default 
+            }
+          }
         });
+        $('#vidsDiv').on('dragstop',function(event){
+          console.log($(this).css('top'));
+          if($(this).css('top').substring(0,$(this).css('top').length-2)>0){
+            $(this).css('transition','top 300ms ease-in-out');
+            $(this).css('-webkit-transition','top 300ms ease-in-out');
+            $(this).css('top','0px');
+            removeTransitionEffect();
+          }
+        });
+      }
+    }
+    function removeTransitionEffect(){
+      if($('#vidsDiv').css('top').substring(0,$('#vidsDiv').css('top').length-2)!=0)setTimeout(removeTransitionEffect,300);
+      else{
+        $('#vidsDiv').css('transition','');
+        $('#vidsDiv').css('-webkit-transition','');
       }
     }
     function resizePage(){
@@ -385,8 +418,8 @@
         text:text
       }).addClass('consoleText').appendTo($('#console'));
       if($('#console').children().length>8){
-        $('#console')[0].empty();
-        $('#console')[0].remove();
+        $('#console').children().first().empty();
+        $('#console').children().first().remove();
       }
     }
     function toggleVolume(vol){
@@ -408,7 +441,7 @@
     </div>
     <div id="content">
       <div id="list">
-        <div id="vidsDiv" class="vidsDiv"></div>
+        <div id="vidsDiv" style="display:none;" class="vidsDiv"></div>
       </div>
       <div id="footer">
         <video id="video" controls>

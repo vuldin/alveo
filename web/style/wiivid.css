@@ -3,6 +3,11 @@
 }
 .vidsDiv{
 	height:1000px;
+	top:9999px;
+	/*
+	transition: top 300ms ease-in-out;
+	-webkit-transition: top 300ms ease-in-out;
+	*/
 }
 .vidDiv{
   padding:10px;
@@ -80,15 +85,15 @@ body{
 #console{
 	padding:5px 0px 5px 5px;
 	position:absolute;
-	top:0;
-	right:0;
+	top:0px;
+	right:0px;
 	background-color:rgba(40,40,40,0.8);
 }
 #fullscreen{
 	display:none;
-  position: absolute;
-  bottom: 0;
-  left: 0;
+  position:absolute;
+  bottom:0px;
+  left:0px;
 }
 #video{
 }
