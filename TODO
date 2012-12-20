@@ -1,0 +1,32 @@
+- add imdb object to vids
+  - COMPLETE make use of omdbFindVid server function
+  - create browser callback function that can be used to populate metadata for a vid object
+- server-based localStorage
+  - http://diveintohtml5.info/storage.html
+  - COMPLETE check existing data before making calls to external APIs
+  - update the server's top variable, then have a separate thread which periodically checks to see if an update needs to be made to localStorage
+    - this would allow for multiple updates to be combined into a single localStorage update
+- metadata completion score for vids
+  - return a percentage representing the completion of metadata
+- COMPLETE periodically update timePlayed of vid
+- layout
+  - COMPLETE directory listing in banner across top of page from left to right
+    - subdirs show on parent click (previously shown subdirs are removed)
+  - video list section
+    - toggle between list and table views
+    - choosing a vid brings up a vid detail div which contains the player
+    - sides of the vid detail div show arrows which allow quick navigation to previous/next vid in the list
+- recent vids
+  - default page will show toplevel directories along with the most recently watched vids in a recent div
+  - recent div is hidden from view when vidlist gets populated
+  - recent divis shown if no directories are selected (and no videos are shown)
+- cCreateDirectoryList getting called when any client makes server request
+  - https://github.com/Flotype/now/wiki/Documentation
+  - look into using the now namespace (vs everyone) for most server calls
+  - sGetList needs to be modified
+- find dir object in tree by name
+  - this will allow to redraw vidsDiv with appropriate vids based on previous dirdiv selection
+- add recently viewed vids to recent collection
+  - COMPLETE retrieve this info on page load before any directory is selected
+  - revert to recent list when user goes to toplevel by removing all subdirs from view
+- leave review for little coffee shop in New Bend

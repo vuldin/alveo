@@ -35,13 +35,17 @@
       addPopcornEvents();
       initLayout();
       resizePage();
+      var initialDir=$('#initialDir');
       now.ready(function(){
         console.log('now.ready');
         now.sGetData();
         now.sGetRecent();
         now.sGetMediaServerUrl();
         initData();
-        createDirectoryList();
+        initialDir.on('mouseup',function(event){
+          initialDir.detach();
+          createDirectoryList();
+        });
         populateVids();
       });
       now.cGetData=function(val){
@@ -65,19 +69,6 @@
           setTimeout(initData,100);
         }else console.log('data initialized');
       }
-      function showVidDetails(vid){
-        // TODO 
-        $('#vidDetails').empty();
-        vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
-        //vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
-        var vidombdDiv;
-        if(obj.omdb!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
-        if(obj.omdbResults!=-1){
-          /* TODO create div for each result */
-          vidomdbDiv=jQuery('<div/>',{text:obj.omdbResults}).appendTo($('#vidDetails')).addClass('vidDiv');
-        }
-        if(obj.omdbError!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdbError}).appendTo($('#vidDetails')).addClass('vidDiv');
-      }
       function addDirEvents(){
         // touchstart, touchend, touchmove, touchcancel
       }
@@ -91,13 +82,13 @@
     function createDirectoryList(){
       if(data==-1)setTimeout(createDirectoryList,100);
       else{
+        console.log('createDirectoryList');
         $('#toplevelDirs').empty();
         $('#toplevelDirs').nextAll().empty();
         $('#toplevelDirs').nextAll().remove();
         $.each(data.subdirs,function(key,dir){
           if(dir.subdirs!=undefined)buildDivTree(dir,$('#toplevelDirs'),true);
         });
-        //$('#toplevelDirs').css('width',$('#toplevelDirs').width()); // make toplevelDirs width equal to longest child 
       }
     }
     function populateVids(dir){
@@ -131,6 +122,19 @@
           setVidsDivHeight();
         }
       }
+    }
+    function showVidDetails(vid){
+      // TODO 
+      $('#vidDetails').empty();
+      vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
+      //vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+      var vidombdDiv;
+      if(obj.omdb!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+      if(obj.omdbResults!=-1){
+        /* TODO create div for each result */
+        vidomdbDiv=jQuery('<div/>',{text:obj.omdbResults}).appendTo($('#vidDetails')).addClass('vidDiv');
+      }
+      if(obj.omdbError!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdbError}).appendTo($('#vidDetails')).addClass('vidDiv');
     }
     function setVidsDivHeight(){
       var total=0;
@@ -303,7 +307,9 @@
             $('#toplevelDirs').nextAll().last().empty();
             $('#toplevelDirs').nextAll().last().remove();
             if($('#toplevelDirs').nextAll().length==0){
-              // TODO only toplevel dirlist is left... change it back to default 
+              console.log('toplevel dirlist remains');
+              // TODO only toplevel dirlist is left... change it back to default
+              //initialDir.appendTo('#toplevelDirs');
             }
           }
         });
@@ -437,7 +443,9 @@
   </head>
   <body>
     <div id="banner">
-      <div id="toplevelDirs" class="dirsDiv"></div>
+      <div id="toplevelDirs" class="dirsDiv">
+        <div id="initialDir" class="dirDiv">Begin directory navigation</div>
+      </div>
     </div>
     <div id="content">
       <div id="list">

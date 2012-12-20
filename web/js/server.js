@@ -317,11 +317,11 @@ everyone.now.sAddRecent=function(recentvid){
   this.now.cGetRecent(recent);
 };
 everyone.now.sGetRecent=function(){
-  console.log('sGetRecent from: '+this.user.clientId);
+  console.log('sGetRecent at '+new Date()+' from: '+this.user.clientId);
   this.now.cGetRecent(recent);
 }
 everyone.now.sGetData=function(){
-  console.log('sGetRecent from: '+this.user.clientId);
+  console.log('sGetRecent at '+new Date()+' from: '+this.user.clientId);
   this.now.cGetData(data);
 };
 everyone.now.sGetMediaServerUrl=function(){
@@ -345,7 +345,7 @@ function dirSearch(path,array){
   return result;
 }
 everyone.now.sVidSearch=function(url){
-  console.log('sVidSearch from: '+this.user.clientId);
+  console.log('sVidSearch at '+new Date()+' from: '+this.user.clientId);
   //everyone.now.cVidSearch(vidSearch(url));
   this.now.cVidSearch(vidSearch(url));
 };
