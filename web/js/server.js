@@ -80,8 +80,6 @@ var emitter=walk('../video',options);
 var everyone = nowjs.initialize(server);
 var data=null;
 var recent=null;
-var vidSearchResults=new Array();
-//var options={"follow_symlinks":true,"max_depth:":1};
 if(typeof localStorage==='undefined'||localStorage===null){
   var LocalStorage=require('node-localstorage').LocalStorage;
   localStorage=new LocalStorage('./scratch');
@@ -114,55 +112,45 @@ if(!localStorage.getItem('recent')){
 }
 emitter.on('directory',function(dirpath,stat){
   if(dirpath.indexOf("/.")==-1){ // only non-hidden files
-    var dir=dirSearch(dirpath,data.subdirs);
-    if(dir==-1){ // only if it doesn't already exist in data
+    var dirUrl=dirpath.replace(dirpath.substring(0,dirpath.indexOf('video')+6),mediaserverUrl);
+    var dir=data.find({url:dirUrl});
+    if(!dir){ // only if it doesn't already exist in data
       var vids=new Array();
       var subdirs=new Array();
       var dir={
           'name':   dirpath.substring(dirpath.lastIndexOf('/')+1,dirpath.length),
           'path':   dirpath,
-          'url':    dirpath.replace(dirpath.substring(0,dirpath.indexOf('video')+6),mediaserverUrl),
+          'url':    dirUrl,
           'lastmod':stat.atime,
           'found':  true,
           'subdirs':subdirs,
           'vids':   vids
       };
-      var parentPath=dir.path.substring(0,dir.path.lastIndexOf('/'));
-      var parent=dirSearch(parentPath,data.subdirs);
-      if(parent==-1){
-        // add to data
+      var parentUrl=dir.url.substring(0,dir.url.lastIndexOf('/'));
+      var parent=data.find({url:parentUrl});
+      if(!parent){
         //console.log('this is a top level directory');
         data.subdirs.push(dir);
       }
       else{
-        // add to parent
         //console.log('adding to parent');
-        //console.log(parent.path);
-        //console.log('\t'+dir.name);
         parent.subdirs.push(dir);
       }
     }else{
       dir.found=true;
       dir.lastmod=stat.atime;
-      /*
-      // this always was true anyway...
-      if(dir.lastmod!=stat.atime){
-        console.log('updating lastmod for dir: '+dir.name);
-      }
-      */
     }
   }
 });
 emitter.on('file',function(vidpath,stat){
-  // ignore hidden files
-  if(vidpath.indexOf('/.')==-1){
-    var vid=vidSearch(vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),mediaserverUrl));
-    if(vid==-1){
-      console.log('new vid: '+vidpath);
+  if(vidpath.indexOf('/.')==-1){ // ignore hidden files
+    var vidUrl=vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),mediaserverUrl);
+    var vid=data.find({url:vidUrl});
+    if(!vid){ // new vid
       vid={
           'name':vidpath.substring(vidpath.lastIndexOf('/')+1,vidpath.lastIndexOf('.')),
           'path':vidpath,
-          'url':vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),mediaserverUrl),
+          'url':vidUrl,
           'lastmod':stat.atime,
           'found':true,
           'mime':mime.lookup(vidpath),
@@ -173,20 +161,13 @@ emitter.on('file',function(vidpath,stat){
           'omdbError':-1,
           'metascore':-1
           };
-      if(dirSearch(vidpath,data.subdirs)==-1){ // dir not found
-        var parentPath=vid.path.substring(0,vid.path.lastIndexOf('/'));
-        var parent=dirSearch(parentPath,data.subdirs);
-        if(parent==-1){
-          console.log('this is a top level video');
-          data.vids.push(vid);
-        }
-        else parent.vids.push(vid);
-      }
+      var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
+      var parent=data.find({url:parentUrl});
+      parent.vids.push(vid);
     }else{
       vid.found=true;
       var newmod=new Date(stat.atime);
       if(vid.lastmod!=newmod.toISOString()){
-        console.log('updating lastmod for vid: '+vid.name);
         vid.lastmod=stat.atime;
       }
     }
@@ -263,8 +244,7 @@ function omdbFindVid(vid){
         localStorage.setItem('searchResult',JSON.stringify(searchResult));
       }
     });
-  }else{
-    // vid has omdb metadata
+  }else{ // vid has omdb metadata
     if(vid.omdb!=-1){
       console.log('local result');
       console.log(vid.omdb);
@@ -279,40 +259,26 @@ function omdbFindVid(vid){
     }
   }
 }
-//everyone.now.sBackup=function(data,vid){
 everyone.now.sBackup=function(vid){
-  //console.log(vid.name+': '+vid.timePlayed);
-  //console.log(vid.url);
   var currentVid=vidSearch(vid.url);
-  var parentPath=vid.path.substring(0,vid.path.lastIndexOf('/'));
-  var parent=dirSearch(parentPath,data.subdirs);
-  //var index=parent.vids.indexOf(currentVid);
-  //console.log(index+'/'+parent.vids.length);
-  //console.log(JSON.stringify(parent.vids[index],null,2));
+  // TODO compare currentVid to vid... if they are the same this function isn't needed
+  console.log('sBackup: currentVid '+JSON.stringify(currentVid));
+  console.log('sBackup: vid '+JSON.stringify(vid));
+  var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
+  var parent=data.find({url:parentUrl});
   parent.vids.splice(parent.vids.indexOf(currentVid),1,vid);
-  //console.log('length: '+parent.vids.length);
-  //console.log(JSON.stringify(parent.vids,null,2));
   localStorage.setItem('data',JSON.stringify(data));
   everyone.now.cGetData(data);
 };
 everyone.now.sAddRecent=function(recentvid){
   console.log(recentvid);
-  //var match=false;
-  //if(recent.length>20)recent.splice(0,1);
-  //$.each(recent,function(key,recentvid){
   for(var i=0;i<recent.vids.length;i++){
-    //if(recentvid.url==recent.vids[i].url&&recentvid.name==recent.vids[i].name){
     if(recentvid.name==recent.vids[i].name){
-      //console.log(vidurl+' already added to recent list at '+i);
       recent.vids.splice(i,1);
     }
   }
-  //if(!match){
-    //recent.push(vid);
   if(recent.vids.length>1)recent.vids.splice(0,0,recentvid);
   else recent.vids.push(recentvid);
-  //}
-  //console.log(recent);
   localStorage.setItem('recent',JSON.stringify(recent));
   this.now.cGetRecent(recent);
 };
@@ -327,52 +293,30 @@ everyone.now.sGetData=function(){
 everyone.now.sGetMediaServerUrl=function(){
   this.now.cGetMediaServerUrl(mediaserverUrl);
 }
-function dirSearch(path,array){
-  //console.log('search request: '+path);
-  var result=-1;
-  for(var i=0;i<array.length;i++){
-    if(path.indexOf(array[i].path)>-1){
-      //console.log('partial path found');
-      if(path==array[i].path){
-        //console.log('match found');
-        result=array[i];
-        break;
-      }
-      result=dirSearch(path,array[i].subdirs);
+Object.prototype.find=function(keyObj){
+  var prop,key,val,tRet;
+  for(prop in keyObj){
+    if(keyObj.hasOwnProperty(prop)){
+      key=prop;
+      val=keyObj[prop];
     }
   }
-  //console.log('search result: '+result.path);
-  return result;
-}
-everyone.now.sVidSearch=function(url){
-  console.log('sVidSearch at '+new Date()+' from: '+this.user.clientId);
-  //everyone.now.cVidSearch(vidSearch(url));
-  this.now.cVidSearch(vidSearch(url));
-};
-function vidSearch(url,array){
-  //vidSearchResults=new Array();
-  var result=-1;
-  _vidSearch(url,array);
-  $.each(vidSearchResults,function(key,val){
-    if(val!=undefined)result=val;
-  });
-  return result;
-}
-function _vidSearch(url,array){
-  if(array==undefined)array=data.subdirs;
-  $.each(array,function(dirkey,dir){
-    if(url.indexOf(dir.url)>-1){
-      $.each(dir.vids,function(vidkey,vid){
-        if(url==vid.url)addVidResult(vid);
-      });
-      vidSearch(url,dir.subdirs);
+  for(prop in this){
+    if(prop==key){
+      if(this[prop]==val){
+        return this;
+      }
+    }else if(this[prop] instanceof Object){
+      if(this.hasOwnProperty(prop)){
+        tRet=this[prop].find(keyObj);
+        if(tRet){return tRet;}
+      }
     }
-  });
-}
-function addVidResult(val){
-  vidSearchResults.push(val);
-}
+  }
+  return false;
+};
 function sortDir(dir){
+  // TODO look into automatically sorting the array
   dir.subdirs.sort(function(a,b){
     return a.path.localeCompare(b.path);
   });

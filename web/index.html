@@ -18,31 +18,33 @@
     <script>
     var data=-1; // main data containing all directory and video information 
     var recent=-1; // recently played video url list 
-    var vidDetails=-1; // result from server of a request for video metadata 
+    //var vidDetails=-1; // result from server of a request for video metadata 
     var vidsDivTop=0;
     var dirSearchResults=new Array();
     var vidSearchResults=new Array();
     var playing=false;
     var currentVid=-1;
-    var mediaserverUrl=-1;
+    //var mediaserverUrl=-1;
     var volume=0;
     var popcorn=-1;
     var mousedownTimeout=null;
     var drag=false;
+    var initialDir=null;
     $(document).ready(function(){
       console.log('document.ready');
       popcorn=Popcorn('#video');
       addPopcornEvents();
       initLayout();
       resizePage();
-      var initialDir=$('#initialDir');
+      initialDir=$('#initialDir');
       now.ready(function(){
         console.log('now.ready');
         now.sGetData();
         now.sGetRecent();
-        now.sGetMediaServerUrl();
+        //now.sGetMediaServerUrl();
         initData();
         initialDir.on('mouseup',function(event){
+          event.stopPropagation();
           initialDir.detach();
           createDirectoryList();
         });
@@ -56,14 +58,18 @@
         console.log('new recent variable from server');
         recent=val;
       }
+      /*
       now.cGetVidDetails=function(val){
         console.log('new vidDetails variable from server');
         vidDetails=val;
       }
       now.cGetMediaServerUrl=function(val){
-        console.log('new mediaserverURL variable from server');
-        mediaserverUrl=val;
+        if(mediaserverUrl!=val){
+          console.log('new mediaserverURL variable from server');
+          mediaserverUrl=val;
+        }
       }
+      */
       function initData(){
         if(recent==-1||data==-1){
           setTimeout(initData,100);
@@ -91,18 +97,37 @@
         });
       }
     }
+    now.cShowVids=function(dir){
+      console.log('cShowVids server sent vids for '+dir.name);
+      //if(dir!=undefined&&dir!=-1&&dir.vids.length>0){ // given directory contains vids
+      if(dir.vids.length>0){
+        $.each(dir.vids,function(key,vid){
+          buildDivTree(vid,vidsDiv,false);
+        });
+      }else{
+        vidsDivTop+=-19;
+        jQuery('<div/>',{text:'Recently viewed videos:'}).appendTo(vidsDiv).addClass('RecentVidsMsgDiv');
+        $.each(recent.vids,function(key,recentvid){
+          buildDivTree(recentvid,vidsDiv,false);
+        });
+      }
+      setVidsDivHeight();
+    }
     function populateVids(dir){
       if(recent==-1||data==-1){
         setTimeout(populateVids,100);
       }else{
+        console.log('populateVids');
         vidsDivTop=0;
         vidsDiv=$('#vidsDiv');
         vidsDiv.css('position','relative');
-        console.log('changing vidsDiv top from '+vidsDiv.css('top')+' to '+$(window).height());
+        //console.log('changing vidsDiv top from '+vidsDiv.css('top')+' to '+$(window).height());
         vidsDiv.css('top',$(window).height());
         vidsDiv.css('display','block');
         vidsDiv.empty();
-        if(dir!=undefined&&dir!=-1&&dir.vids.length>0){ // given directory contains vids 
+        //if(dir!=undefined&&dir!=-1&&dir.vids.length>0){
+        if(dir&&dir.vids.length>0){
+          console.log('populateVids: given directory contains vids '+dir.vids.length); 
           $.each(dir.vids,function(key,vid){
             buildDivTree(vid,vidsDiv,false);
           });
@@ -201,23 +226,33 @@
           event.stopPropagation();
           parentDiv.nextAll().empty();
           parentDiv.nextAll().remove();
-          if(div.siblings().first().hasClass('hiddenDir')){
+          if(div.hasClass('selectedDir')){
+            div.removeClass('selectedDir');
             div.siblings().removeClass('hiddenDir');
-            parentDiv.nextAll().empty();
-            parentDiv.nextAll().remove();
-          }else div.siblings().addClass('hiddenDir');
-          console.log('subdirs length: '+obj.subdirs.length);
-          if(obj.subdirs.length>0){ // display subdirs 
-            var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
-            subdirsdiv.appendTo(parentDiv.parent());
-            var left=subdirsdiv.prev().children().not('.hiddenDir').offset().left+subdirsdiv.prev().width()-6;
-            subdirsdiv.css('left',left);
-            subdirsdiv.css('z-index',subdirsdiv.prev().css('z-index')-1);
-            $.each(obj.subdirs,function(key,subdir){
-              buildDivTree(subdir,subdirsdiv,true);
-            });
-            //subdirsdiv.css('width',subdirsdiv.width()); // make subdirs width equal to longest child 
           }
+          else{
+            div.addClass('selectedDir');
+            div.siblings().addClass('hiddenDir');
+            if(obj.subdirs.length>0){ // display subdirs 
+              var subdirsdiv=jQuery('<div/>',{}).addClass('dirsDiv');
+              subdirsdiv.appendTo(parentDiv.parent());
+              var left=subdirsdiv.prev().children('.selectedDir').offset().left+subdirsdiv.prev().width()-6;
+              subdirsdiv.css('left',left);
+              subdirsdiv.css('z-index',subdirsdiv.prev().css('z-index')-1);
+              $.each(obj.subdirs,function(key,subdir){
+                buildDivTree(subdir,subdirsdiv,true);
+              });
+            }
+          }
+          /*
+          //div.siblings().toggle();
+          div.siblings().slideToggle();
+          console.log('subdirs length: '+obj.subdirs.length);
+          var hiddenSiblings=div.siblings().filter(function(){
+          }else{
+            return $(this).css('display') == 'none';
+          });
+          */
           populateVids(obj);
         });
       }
@@ -276,53 +311,70 @@
       }
     }
     function initLayout(){
-      if(mediaserverUrl==-1){
-        setTimeout(initLayout,500);
-      }else{
-        console.log('initLayout');
-        if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
-          $('#console')[0].style.top='auto';
-          $('#console')[0].style.bottom='0px';
+      console.log('initLayout');
+      if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
+        $('#console')[0].style.top='auto';
+        $('#console')[0].style.bottom='0px';
+      }
+      $('#banner').on('mouseup',function(event){
+        event.stopPropagation();
+        //pageConsole('banner mouseup');
+        //console.log($('#toplevelDirs').nextAll());
+        //console.log($('#toplevelDirs').nextAll().last());
+        //$('#toplevelDirs').nextAll().last().empty();
+        //$('#toplevelDirs').nextAll().last().remove();
+        //console.log($('#toplevelDirs').nextAll().last());
+        //var selectedDir=-1; 
+        //var prevurl=mediaserverUrl; 
+        /*
+        prevurl=data.url;
+        $.each($('#toplevelDirs').parent().children().children().not('.hiddenDir'),function(key,val){
+          prevurl+=val.innerHTML+'/';
+        });
+        prevurl=prevurl.substring(0,prevurl.length-1);
+        var prevdir=dirSearch(prevurl);
+        //var prevdir=data.find({url:prevurl});
+        populateVids(prevdir);
+        */
+        //console.log($('#toplevelDirs').siblings().last().children().not('.hiddenDir'));
+        //$($('#toplevelDirs').siblings().last().children().not('.hiddenDir')[0]).mouseup();
+        //var prevDir=$($('#toplevelDirs').siblings().last().prev().children().not('.hiddenDir')[0]);
+        var prevDir=$('#toplevelDirs').siblings().last().prev().children('.selectedDir');
+        //prevDir.mouseup();
+        if(prevDir.text().length>0){
+          console.log('initlayout: displaying '+prevDir.text()+' vids');
+          prevDir.mouseup();
+        }else{
+          console.log('initlayout: resetting');
+          $('#toplevelDirs').empty();
+          initialDir.appendTo($('#toplevelDirs'));
+          populateVids();
         }
-        $('#banner').on('mouseup',function(event){
-          event.stopPropagation();
-          pageConsole('banner mouseup');
+      });
+      $('#vidsDiv').draggable({axis:'y'});
+      $('#vidsDiv').on('dragstart',function(event){
+        drag=true;
+        pageConsole('list dragstart/touchmove');
+        clearTimeout(mousedownTimeout);
+        if($('#toplevelDirs').nextAll().last().children('.hiddenDir').length==0){ // last dirlist isn't being used... remove it 
           $('#toplevelDirs').nextAll().last().empty();
           $('#toplevelDirs').nextAll().last().remove();
-          //var selectedDir=-1;
-          var prevurl=mediaserverUrl;
-          $.each($('#toplevelDirs').parent().children().children().not('.hiddenDir'),function(key,val){
-            prevurl+=val.innerHTML+'/';
-          });
-          prevurl=prevurl.substring(0,prevurl.length-1);
-          var prevdir=dirSearch(prevurl);
-          populateVids(prevdir);
-        });
-        $('#vidsDiv').draggable({axis:'y'});
-        $('#vidsDiv').on('dragstart',function(event){
-          drag=true;
-          pageConsole('list dragstart/touchmove');
-          clearTimeout(mousedownTimeout);
-          if($('#toplevelDirs').nextAll().last().children('.hiddenDir').length==0){ // last dirlist isn't being used... remove it 
-            $('#toplevelDirs').nextAll().last().empty();
-            $('#toplevelDirs').nextAll().last().remove();
-            if($('#toplevelDirs').nextAll().length==0){
-              console.log('toplevel dirlist remains');
-              // TODO only toplevel dirlist is left... change it back to default
-              //initialDir.appendTo('#toplevelDirs');
-            }
+          if($('#toplevelDirs').nextAll().length==0){
+            console.log('toplevel dirlist remains');
+            // TODO only toplevel dirlist is left... change it back to default
+            //initialDir.appendTo('#toplevelDirs');
           }
-        });
-        $('#vidsDiv').on('dragstop',function(event){
-          console.log($(this).css('top'));
-          if($(this).css('top').substring(0,$(this).css('top').length-2)>0){
-            $(this).css('transition','top 300ms ease-in-out');
-            $(this).css('-webkit-transition','top 300ms ease-in-out');
-            $(this).css('top','0px');
-            removeTransitionEffect();
-          }
-        });
-      }
+        }
+      });
+      $('#vidsDiv').on('dragstop',function(event){
+        console.log($(this).css('top'));
+        if($(this).css('top').substring(0,$(this).css('top').length-2)>0){
+          $(this).css('transition','top 300ms ease-in-out');
+          $(this).css('-webkit-transition','top 300ms ease-in-out');
+          $(this).css('top','0px');
+          removeTransitionEffect();
+        }
+      });
     }
     function removeTransitionEffect(){
       if($('#vidsDiv').css('top').substring(0,$('#vidsDiv').css('top').length-2)!=0)setTimeout(removeTransitionEffect,300);

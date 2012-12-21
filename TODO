@@ -30,3 +30,4 @@
   - COMPLETE retrieve this info on page load before any directory is selected
   - revert to recent list when user goes to toplevel by removing all subdirs from view
 - leave review for little coffee shop in New Bend
+- vidSearch returns incorrect video after adding new directory to video directory
