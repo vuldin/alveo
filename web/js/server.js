@@ -147,8 +147,48 @@ emitter.on('file',function(vidpath,stat){
     var vidUrl=vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),mediaserverUrl);
     var vid=data.find({url:vidUrl});
     if(!vid){ // new vid
+      var series='';
+      var season='';
+      var episode='';
+      var title='';
+      var year='';
+      var name=vidpath.substring(vidpath.lastIndexOf('/')+1,vidpath.lastIndexOf('.'));
+      if(name.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}[Ee]{0,1}[0-9]{0,3}\s-\s/)){ // is episode (name is [series] - [num] - title)
+        series=name.substring(0,name.indexOf('-')-1);
+        episode=name.substring(name.indexOf('-')+2,name.length);
+        title=episode.substring(episode.indexOf('-')+2,episode.length);
+        episode=episode.substring(0,episode.indexOf('-')-1);
+        season=episode.match(/[sS][0-9]{2,3}/)[0];
+        season=season.substring(1,season.length);
+        if(season.charAt(0)=='0')season=season.substring(1,season.length);
+        episode=episode.match(/[eE][0-9]{2,3}(.*?)$/)[0];
+        episode=episode.substring(1,episode.length);
+        episode=episode.replace(/[Ee]/,'-');
+        if(episode.charAt(0)=='0')episode=episode.substring(1,episode.length);
+      }else if(title.match(/\s-\s/)){ // need to split series and title
+        // TODO need to make this match more stringent
+        series=title.substring(0,title.indexOf(' -'));
+        title=title.substring(title.indexOf(' - ')+3,title.length);
+      }
+      if(name.substring(name.lastIndexOf(')')-4,name.lastIndexOf(')')).match(/^\d{4}$/)!=null){ // contains a year
+        title=name.substring(0,name.lastIndexOf('(')-1);
+        year=name.substring(name.lastIndexOf(')')-4,name.lastIndexOf(')'));
+      };
+      /*
+      console.log('name: |'+name+'|');
+      console.log('series: |'+series+'|');
+      console.log('season: |'+season+'|');
+      console.log('episode: |'+episode+'|');
+      console.log('title: |'+title+'|');
+      console.log('year: |'+year+'|');
+      */
       vid={
-          'name':vidpath.substring(vidpath.lastIndexOf('/')+1,vidpath.lastIndexOf('.')),
+          'name':name,
+          'series':series,
+          'season':season,
+          'episode':episode,
+          'title':title,
+          'year':year,
           'path':vidpath,
           'url':vidUrl,
           'lastmod':stat.atime,
@@ -199,29 +239,7 @@ function omdbFindVid(vid){
   console.log('omdbFindVid');
   console.log(vid);
   if(vid.omdb==-1&&vid.omdbResults==-1&&vid.omdbError==-1){ // vid has no omdb metadata yet
-    var series='';
-    var title='';
-    var year='';
-    var reqUrl='';
-    if(vid.path.match(/\s-\s[Ss][0-9]{2,3}[Ee][0-9]{2,3}\s-\s/)){ // is in episodes folder (name is [series] - [num] - title)
-      console.log('episode');
-      series=vid.name.substring(0,vid.name.indexOf('-')-1);
-      title=vid.name.substring(vid.name.lastIndexOf('-')+2,vid.name.length);
-    }
-    if(vid.name.substring(vid.name.lastIndexOf(')')-4,vid.name.lastIndexOf(')')).match(/^\d{4}$/)!=null){ // name contains a year
-      console.log('contains year');
-      title=vid.name.substring(0,vid.name.lastIndexOf('(')-1);
-      year=vid.name.substring(vid.name.lastIndexOf(')')-4,vid.name.lastIndexOf(')'));
-    };
-    if(title.match(/\s-\s/)){ // split title with series
-      console.log('contains series');
-      series=title.substring(0,title.indexOf(' -'));
-      title=title.substring(title.indexOf(' - ')+3,title.length);
-    }
-    console.log('|'+series+'|');
-    console.log('|'+title+'|');
-    console.log('|'+year+'|');
-    reqUrl='http://www.omdbapi.com/?s='+series+'&t='+title+'&y='+year+'&tomatoes=true&callback=?';
+    var reqUrl='http://www.omdbapi.com/?s='+vid.series+'&t='+vid.title+'&y='+vid.year+'&tomatoes=true&callback=?';
     //reqUrl='http://www.omdbapi.com/?s='+series+'&t='+title+'&y='+year+'&callback=?';
     console.log(reqUrl);
     $.getJSON(reqUrl,function(searchResult){
@@ -229,41 +247,42 @@ function omdbFindVid(vid){
         console.log('error or no results');
         vid.omdbError=searchResult;
         //everyone.now.sUpdateVid(vid);
-        localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        //localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        everyone.now.sBackup(vid);
       }
       if(searchResult.Search){
         console.log('multiple results ('+searchResult.Search.length+')');
         vid.omdbResults=searchResult.Search;
         //everyone.now.sUpdateVid(vid);
-        localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        //localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        everyone.now.sBackup(vid);
       }
       if(searchResult.Title){
         console.log('single result');
         vid.omdb=searchResult;
         //everyone.now.sUpdateVid(vid);
-        localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        //localStorage.setItem('searchResult',JSON.stringify(searchResult));
+        everyone.now.sBackup(vid);
       }
     });
   }else{ // vid has omdb metadata
     if(vid.omdb!=-1){
-      console.log('local result');
+      console.log('omdbFindVid: vid already has local result');
       console.log(vid.omdb);
       //console.log('local result: '+vid.omdb.Plot);
     }
     if(vid.omdbResults!=-1){
-      console.log('multiple local results');
+      console.log('omdbFindVid: vid already has multiple local results');
       console.log(vid.omdbResults);
     }
     if(vid.omdbError!=-1){
-      console.log('local omdb error: '+vid.omdbError.Error);
+      console.log('omdbFindVid: vid already has local omdb error');
+      console.log(vid.omdbError);
     }
   }
 }
 everyone.now.sBackup=function(vid){
-  var currentVid=vidSearch(vid.url);
-  // TODO compare currentVid to vid... if they are the same this function isn't needed
-  console.log('sBackup: currentVid '+JSON.stringify(currentVid));
-  console.log('sBackup: vid '+JSON.stringify(vid));
+  var currentVid=data.find({url:vid.url});
   var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
   var parent=data.find({url:parentUrl});
   parent.vids.splice(parent.vids.indexOf(currentVid),1,vid);
@@ -271,9 +290,8 @@ everyone.now.sBackup=function(vid){
   everyone.now.cGetData(data);
 };
 everyone.now.sAddRecent=function(recentvid){
-  console.log(recentvid);
   for(var i=0;i<recent.vids.length;i++){
-    if(recentvid.name==recent.vids[i].name){
+    if(recentvid.series==recent.vids[i].series){
       recent.vids.splice(i,1);
     }
   }

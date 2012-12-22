@@ -106,32 +106,29 @@
         });
       }else{
         vidsDivTop+=-19;
-        jQuery('<div/>',{text:'Recently viewed videos:'}).appendTo(vidsDiv).addClass('RecentVidsMsgDiv');
+        jQuery('<div/>',{text:'Recent shows:'}).appendTo(vidsDiv).addClass('RecentVidsMsgDiv');
         $.each(recent.vids,function(key,recentvid){
           buildDivTree(recentvid,vidsDiv,false);
         });
       }
-      setVidsDivHeight();
+      setVidsDivTop(getVidsDivHeight());
     }
     function populateVids(dir){
       if(recent==-1||data==-1){
         setTimeout(populateVids,100);
       }else{
-        console.log('populateVids');
+        //console.log('populateVids');
         vidsDivTop=0;
         vidsDiv=$('#vidsDiv');
         vidsDiv.css('position','relative');
-        //console.log('changing vidsDiv top from '+vidsDiv.css('top')+' to '+$(window).height());
         vidsDiv.css('top',$(window).height());
         vidsDiv.css('display','block');
         vidsDiv.empty();
-        //if(dir!=undefined&&dir!=-1&&dir.vids.length>0){
         if(dir&&dir.vids.length>0){
           console.log('populateVids: given directory contains vids '+dir.vids.length); 
           $.each(dir.vids,function(key,vid){
             buildDivTree(vid,vidsDiv,false);
           });
-          setVidsDivHeight();
         }else{ // display recent vids 
           if(dir!=undefined){
             vidsDivTop+=-19;
@@ -144,24 +141,25 @@
           $.each(recent.vids,function(key,recentvid){
             buildDivTree(recentvid,vidsDiv,false);
           });
-          setVidsDivHeight();
         }
+        setVidsDivTop(getVidsDivHeight());
       }
     }
     function showVidDetails(vid){
       // TODO 
       $('#vidDetails').empty();
       vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
-      //vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
-      var vidombdDiv;
-      if(obj.omdb!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+      var vidombdDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
+      if(obj.omdb!=-1)vidomdbDiv.text(obj.omdb);
       if(obj.omdbResults!=-1){
         /* TODO create div for each result */
-        vidomdbDiv=jQuery('<div/>',{text:obj.omdbResults}).appendTo($('#vidDetails')).addClass('vidDiv');
+        $.each(obj.omdbResults,function(key,val){
+          jQuery('<div/>',{text:val}).appendTo($('#vidDetails')).addClass('vidDiv');
+        });
       }
-      if(obj.omdbError!=-1)vidomdbDiv=jQuery('<div/>',{text:obj.omdbError}).appendTo($('#vidDetails')).addClass('vidDiv');
+      if(obj.omdbError!=-1)vidomdbDiv.text(obj.omdbError);
     }
-    function setVidsDivHeight(){
+    function getVidsDivHeight(){
       var total=0;
       var vidDivCount=0;
       for(var i=0;i<vidsDiv.children().length;i++){
@@ -177,7 +175,10 @@
           }
         }
       }
-      vidsDivTop=$('#list').height()/2-total/2+vidsDivTop;
+      return total;
+    }
+    function setVidsDivTop(vidsDivHeight){
+      vidsDivTop=$('#list').height()/2-vidsDivHeight/2+vidsDivTop;
       if(vidsDivTop<0)vidsDivTop=0;
       vidsDiv.css('top',vidsDivTop);
     }
@@ -257,7 +258,12 @@
         });
       }
       else{ // vid 
-        div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
+        //div=jQuery('<div/>',{text:obj.name}).appendTo(parentDiv).addClass('vidDiv');
+        div=jQuery('<div/>').appendTo(parentDiv).addClass('vidDiv');
+        jQuery('<div/>',{text:obj.title}).appendTo(div).addClass('vidTitleDiv');
+        jQuery('<div/>',{text:obj.series}).appendTo(div).addClass('vidSeriesDiv');
+        //jQuery('<div/>',{text:'season '+obj.season}).appendTo(div).addClass('vidSeasonDiv');
+        //jQuery('<div/>',{text:'(episode '+obj.episode+')'}).appendTo(div).addClass('vidEpisodeDiv');
         div.on('mousedown',function(event){
           mousedownTimeout=setTimeout(function(){
             drag=false;
@@ -280,6 +286,7 @@
       $($('video').children()[0]).attr('src',obj.url);
       popcorn.load();
       popcorn.play();
+      /*
       var newRecentvid={
           'name':obj.name,
           'episode':obj.episode,
@@ -289,6 +296,8 @@
         newRecentvid.name=newRecentvid.name.substring(0,newRecentvid.name.indexOf('-')-1);
       }
       now.sAddRecent(newRecentvid);
+      */
+      now.sAddRecent(obj);
       setTimePlayed();
       setDuration();
     }
@@ -359,16 +368,15 @@
         if($('#toplevelDirs').nextAll().last().children('.hiddenDir').length==0){ // last dirlist isn't being used... remove it 
           $('#toplevelDirs').nextAll().last().empty();
           $('#toplevelDirs').nextAll().last().remove();
-          if($('#toplevelDirs').nextAll().length==0){
-            console.log('toplevel dirlist remains');
-            // TODO only toplevel dirlist is left... change it back to default
-            //initialDir.appendTo('#toplevelDirs');
-          }
         }
       });
       $('#vidsDiv').on('dragstop',function(event){
         console.log($(this).css('top'));
-        if($(this).css('top').substring(0,$(this).css('top').length-2)>0){
+        if($(this).css('top').substring(0,$(this).css('top').length-2)<0){
+          // TODO handle transition to bottom of vidsDiv taking into account -top value, vidsDiv height, and list height 
+          //console.log('initLayout: vidsDiv height is '+getVidsDivHeight());
+          //console.log('initLayout: list height is '+$('#list').height());
+          if($('#list').height()<getVidsDivHeight())console.log('vidsDiv is not fully shown');
           $(this).css('transition','top 300ms ease-in-out');
           $(this).css('-webkit-transition','top 300ms ease-in-out');
           $(this).css('top','0px');
