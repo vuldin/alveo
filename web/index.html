@@ -105,7 +105,7 @@
           buildDivTree(vid,vidsDiv,false);
         });
       }else{
-        vidsDivTop+=-19;
+        vidsDivTop+=-19; // TODO dynamically find div height and add to cumulative vidsDivTop variable 
         jQuery('<div/>',{text:'Recent shows:'}).appendTo(vidsDiv).addClass('RecentVidsMsgDiv');
         $.each(recent.vids,function(key,recentvid){
           buildDivTree(recentvid,vidsDiv,false);
@@ -148,16 +148,19 @@
     function showVidDetails(vid){
       // TODO 
       $('#vidDetails').empty();
-      vidnameDiv=jQuery('<div/>',{text:obj.name}).appendTo($('#vidDetails')).addClass('vidDiv');
-      var vidombdDiv=jQuery('<div/>',{text:obj.omdb}).appendTo($('#vidDetails')).addClass('vidDiv');
-      if(obj.omdb!=-1)vidomdbDiv.text(obj.omdb);
-      if(obj.omdbResults!=-1){
-        /* TODO create div for each result */
-        $.each(obj.omdbResults,function(key,val){
-          jQuery('<div/>',{text:val}).appendTo($('#vidDetails')).addClass('vidDiv');
+      vidnameDiv=jQuery('<div/>',{text:vid.name}).appendTo($('#vidDetails')).addClass('vidDetails');
+      var vidombdDiv=jQuery('<div/>').appendTo($('#vidDetails')).addClass('vidDetails');
+      if(vid.omdb!=-1)vidomdbDiv.text(vid.omdb);
+      if(vid.omdbResults!=-1){
+        $.each(vid.omdbResults,function(key,val){
+          jQuery('<div/>',{text:val}).appendTo($('#vidDetails')).addClass('vidDetails');
         });
       }
-      if(obj.omdbError!=-1)vidomdbDiv.text(obj.omdbError);
+      if(vid.omdbError!=-1)vidomdbDiv.text(vid.omdbError);
+      $($('video').children()[0]).attr('src',vid.url);
+      popcorn.load();
+      $('#banner').css('display','none');
+      resizePage();
     }
     function getVidsDivHeight(){
       var total=0;
@@ -178,6 +181,7 @@
       return total;
     }
     function setVidsDivTop(vidsDivHeight){
+      console.log('setVidsDivTop');
       vidsDivTop=$('#list').height()/2-vidsDivHeight/2+vidsDivTop;
       if(vidsDivTop<0)vidsDivTop=0;
       vidsDiv.css('top',vidsDivTop);
@@ -272,8 +276,9 @@
         div.on('mouseup',function(event){
           if(!drag){
             event.stopPropagation();
-            //showVidDetails(obj);
-            playVid(obj);
+            console.log('buildDivTree: '+obj.name);
+            showVidDetails(obj);
+            //playVid(obj);
           }
         });
       }
@@ -281,22 +286,13 @@
     function playVid(obj){
       // handle WiiU window size change 
       if(navigator.userAgent.indexOf('Nintendo WiiU')>0)resizePage();
-      //currentVid=vid; // removed so recent objects could be cloned/modified 
       currentVid=vidSearch(obj.url);
-      $($('video').children()[0]).attr('src',obj.url);
-      popcorn.load();
+      //$($('video').children()[0]).attr('src',obj.url);
+      if($($('video').children()[0]).attr('src')!=obj.url){ // this likely was already set in showVidDetails 
+        $($('video').children()[0]).attr('src',obj.url);
+        popcorn.load();
+      }
       popcorn.play();
-      /*
-      var newRecentvid={
-          'name':obj.name,
-          'episode':obj.episode,
-          'url':obj.url
-      }
-      if(obj.lastmod!=undefined){
-        newRecentvid.name=newRecentvid.name.substring(0,newRecentvid.name.indexOf('-')-1);
-      }
-      now.sAddRecent(newRecentvid);
-      */
       now.sAddRecent(obj);
       setTimePlayed();
       setDuration();
@@ -355,6 +351,7 @@
           prevDir.mouseup();
         }else{
           console.log('initlayout: resetting');
+          initialDir.detach(); // make sure initialDir isn't attached before emptying parent or it will lose event handling 
           $('#toplevelDirs').empty();
           initialDir.appendTo($('#toplevelDirs'));
           populateVids();
@@ -383,6 +380,10 @@
           removeTransitionEffect();
         }
       });
+      $('#footerTop').on('mouseup',function(event){
+        $('#banner').toggle();
+        resizePage();
+      });
     }
     function removeTransitionEffect(){
       if($('#vidsDiv').css('top').substring(0,$('#vidsDiv').css('top').length-2)!=0)setTimeout(removeTransitionEffect,300);
@@ -394,7 +395,6 @@
     function resizePage(){
       //$('body').height($(window).height());
       pageConsole('window height: '+$(window).height());
-      $('#footer').width($(window).width()-20);
       if(navigator.userAgent.indexOf('Nintendo WiiU')>0){
         // TODO remove once video is in detail overlay
         $('#video')[0].style.display='none';
@@ -416,6 +416,20 @@
       var remainder=$('#banner').height()*2;
       $('#content').height($(window).height()-remainder);
       $('#list').height($('#content').height()-$('#recent').height());
+      $('#footer').width($(window).width()-20);
+      $('#footerMain').width($('#footer').outerWidth()-$('#footerLeft').outerWidth()-$('#footerRight').outerWidth()-24); // TODO not sure why the 24 add is needed 
+      $('#footer').height($(window).height()-10);
+      $('#footerLeft').height($('#footer').height()-100);
+      $('#footerRight').height($('#footer').height()-100);
+      if($('#banner').css('display')=='none')$('#footer').css('top','10px');
+      else{
+        console.log($(window).height());
+        console.log($('#content').height());
+        console.log($('#banner').height());
+        var top=$(window).height()-remainder;
+        console.log('resizePage: footer top '+top);
+        $('#footer').css('top',top);
+      }
       popcorn.video.height=$(window).height()/3;
       popcorn.video.width=popcorn.video.height*1.8;
       //$('#userAgent').text(navigator.userAgent); 
@@ -512,22 +526,27 @@
         <div id="vidsDiv" style="display:none;" class="vidsDiv"></div>
       </div>
       <div id="footer">
-        <video id="video" controls>
-          <source src=""></source>
-          Please update your browser (video element is unsupported).
-        </video>
-        <div id="vidDetails">No metadata has been found for this video.</div>
+        <div id="footerTop" class="footerTop"></div>
+        <div id="footerLeft" class="footerLeft"></div>
+        <div id="footerMain" class="footerMain">
+          <video id="video" controls>
+            <source src=""></source>
+            Please update your browser (video element is unsupported).
+          </video>
+          <div id="vidDetails">No metadata has been found for this video.</div>
+          <div id="vidcontrols" style="display:none;">
+            <button onclick="document.getElementById('video').play();">Play</button>
+            <button onclick="document.getElementById('video').pause();">Pause</button>
+            <button onclick="document.getElementById('video').volume+=0.1;">Volume+</button>
+            <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
+            <button onclick="document.getElementById('video').volume-=0.1;">Volume-</button>
+            <!-- <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button> -->
+            <button onclick="document.getElementById('video').pause();">Stop</button>
+          </div>
+          <!-- <div id="footnote" style="display:none;"></div> -->
+        </div>
+        <div id="footerRight" class="footerRight"></div>
       </div>
-      <div id="vidcontrols" style="display:none;">
-        <button onclick="document.getElementById('video').play()">Play</button>
-        <button onclick="document.getElementById('video').pause()">Pause</button>
-        <button onclick="document.getElementById('video').volume+=0.1">Volume+</button>
-        <button onclick="toggleVolume(document.getElementById('video').volume);">Mute</button>
-        <button onclick="document.getElementById('video').volume-=0.1">Volume-</button>
-        <!-- <button onclick="document.getElementById('video').pause();document.getElementById('video').src='';">Stop</button> -->
-        <button onclick="document.getElementById('video').pause();">Stop</button>
-      </div>
-      <!-- <div id="footnote" style="display:none;"></div> -->
     </div>
     <div id="console"></div>
     <div id="fullscreen" onclick="fullscreen();">Request fullscreen</div>
