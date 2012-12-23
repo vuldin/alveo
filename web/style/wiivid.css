@@ -61,11 +61,12 @@ body{
 	position:relative;
 }
 #content{
-	position:absolute;
   z-index:-1;
   /* top:70px; */
   background-image: -webkit-radial-gradient(center, ellipse farthest-corner, #39414A 0%, #39414A 50%, #242424 100%);
   width:100%;
+  position: absolute;
+  top: 0;
 }
 #list{
 	overflow:hidden;

@@ -369,14 +369,16 @@
       });
       $('#vidsDiv').on('dragstop',function(event){
         console.log($(this).css('top'));
-        if($(this).css('top').substring(0,$(this).css('top').length-2)<0){
+        //if($(this).css('top').substring(0,$(this).css('top').length-2)<0){
+        if($(this).css('top').substring(0,$(this).css('top').length-2)<$('#banner').height()+10){
           // TODO handle transition to bottom of vidsDiv taking into account -top value, vidsDiv height, and list height 
           //console.log('initLayout: vidsDiv height is '+getVidsDivHeight());
           //console.log('initLayout: list height is '+$('#list').height());
           if($('#list').height()<getVidsDivHeight())console.log('vidsDiv is not fully shown');
           $(this).css('transition','top 300ms ease-in-out');
           $(this).css('-webkit-transition','top 300ms ease-in-out');
-          $(this).css('top','0px');
+          //$(this).css('top','0px');
+          $(this).css('top',$('#banner').height()+10+'px');
           removeTransitionEffect();
         }
       });
@@ -386,8 +388,9 @@
       });
     }
     function removeTransitionEffect(){
-      if($('#vidsDiv').css('top').substring(0,$('#vidsDiv').css('top').length-2)!=0)setTimeout(removeTransitionEffect,300);
+      if($('#vidsDiv').css('top').substring(0,$('#vidsDiv').css('top').length-2)!=$('#banner').height()+10)setTimeout(removeTransitionEffect,100);
       else{
+        console.log('removeTransitionEffect');
         $('#vidsDiv').css('transition','');
         $('#vidsDiv').css('-webkit-transition','');
       }
@@ -413,9 +416,11 @@
         else vpString=vpString.substring(0,vpString.indexOf('height')+7)+vpHeight;
         $('meta[name=viewport]').attr('content',vpString);
       }
-      var remainder=$('#banner').height()*2;
-      $('#content').height($(window).height()-remainder);
-      $('#list').height($('#content').height()-$('#recent').height());
+      //var remainder=$('#banner').height()*2;
+      //$('#content').height($(window).height()-remainder);
+      //$('#list').height($('#content').height()-$('#recent').height());
+      //$('#content').height($(window).height()-$('#banner').height());
+      $('#content').height($(window).height());
       $('#footer').width($(window).width()-20);
       $('#footerMain').width($('#footer').outerWidth()-$('#footerLeft').outerWidth()-$('#footerRight').outerWidth()-24); // TODO not sure why the 24 add is needed 
       $('#footer').height($(window).height()-10);
@@ -426,11 +431,12 @@
         console.log($(window).height());
         console.log($('#content').height());
         console.log($('#banner').height());
-        var top=$(window).height()-remainder;
+        //var top=$(window).height()-remainder;
+        var top=$(window).height()-$('#banner').height();
         console.log('resizePage: footer top '+top);
         $('#footer').css('top',top);
       }
-      popcorn.video.height=$(window).height()/3;
+      popcorn.video.height=$(window).height()/2.5;
       popcorn.video.width=popcorn.video.height*1.8;
       //$('#userAgent').text(navigator.userAgent); 
     }
