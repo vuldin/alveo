@@ -15,6 +15,7 @@
   padding:10px;
   margin:5px;
   /* background:#373F40; */
+  background-image: -moz-radial-gradient(center, ellipse farthest-corner, #373F40 0%, #373F40 50%, #292929 100%);
   background-image: -webkit-radial-gradient(center, ellipse farthest-corner, #373F40 0%, #373F40 50%, #292929 100%);
   border:2px solid;
   /* border-color:#00191E !important; */
@@ -46,6 +47,8 @@
   border-left:2px solid;
 }
 body{
+	font-family:"Ubuntu Beta",UbuntuBeta,Ubuntu,"Bitstream Vera Sans","DejaVu Sans",Tahoma,sans-serif;
+	font-size:14px;
 	margin:0px;
 	overflow:hidden;
 	/* background:#39414A; */
@@ -63,10 +66,12 @@ body{
 #content{
   z-index:-1;
   /* top:70px; */
+  background-image: -moz-radial-gradient(center, ellipse farthest-corner, #39414A 0%, #39414A 50%, #242424 100%);
   background-image: -webkit-radial-gradient(center, ellipse farthest-corner, #39414A 0%, #39414A 50%, #242424 100%);
   width:100%;
   position: absolute;
   top: 0;
+  overflow:hidden;
 }
 #list{
 	overflow:hidden;
@@ -133,12 +138,18 @@ body{
   border-bottom-left-radius: 20px;
   border-bottom: 2px solid;
 }
-#console{
-	padding:5px 0px 5px 5px;
+#consoleWrapper{
 	position:absolute;
 	top:0px;
 	right:0px;
-	background-color:rgba(40,40,40,0.8);
+	bottom:0px;
+  padding-left:20px;
+  background-color:rgba(40,40,40,0.8);
+}
+#console{
+	max-width:400px;
+	padding:10px;
+  overflow:hidden;
 }
 #fullscreen{
 	display:none;

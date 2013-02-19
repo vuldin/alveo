@@ -2,93 +2,69 @@ var fs=require('fs'),
     walk=require('walkdir');
     nowjs=require('now'),
     mime=require('mime'),
-    $=require('jquery');
-/*
-var vidStreamer = require('vid-streamer');
-var vidstreamSettings={
-    "mode": "development",
-    "forceDownload": false,
-    "random": true,
-    "rootFolder": "/video/",
-    "rootPath": "/video/",
-    "server": "VidStreamer.js/0.1.2"
-};
-//var vidstreamer = require('http').createServer(vidStreamer.settings(vidstreamSettings));
-var vidstreamer = require('http').createServer(vidStreamer);
-vidstreamer.listen(3000);
-console.log("vidstreamer running port 3000");
-console.log(vidstreamer);
-var BinaryServer=require('binaryjs').BinaryServer;
-// Start Binary.js server
-var mediaserver=BinaryServer({port:9000});
-// Wait for new user connections
-mediaserver.on('connection',function(client){
-  // Stream a flower as a hello!
-  console.log(__dirname);
-  var file = fs.createReadStream('../video/theoratest.ogg');
-  client.send(file);
-});
-*/
-var mediaserverUrl="http://wiivid:9000/";
+    $=require('jquery'),
+    mediaserverUrl=null; // TODO get this value from server
+// node:8888 + httpd:9999
+var appPort=8888;
+var appUrl="http://wiivid:"+appPort+"/";
+var mediaserverUrl="http://wiivid:9999/";
 var server=require('http').createServer(function(req,resp){
   var path=req.url,
-      contentType='';
+      contentType='',
+      options={
+        //flags:'r',
+        //encoding:'utf8',
+        //fd:null,
+        //mode: 0666,
+        //start:0,
+        //end:99,
+        //bufferSize:64 * 1024
+      };
   if(path=='/')path='/index.html';
-  path='..'+path;
+  path=__dirname.substring(0,__dirname.lastIndexOf('/'))+decodeURI(path);
   contentType=mime.lookup(path);
-  //console.log(path+'\t'+contentType);
   //console.log(req.headers['user-agent']);
-  /*
-  if(req.method!=='GET'){
-    resp.writeHead(400);
-    resp.end();
-    return;
-  }
-  var stream=fs.createReadStream(path);
-  stream.on('error',function(){
-    resp.writeHead(404,{'Content-Type':'text/plain'});
-    resp.write('404 Not Found\n');
-    resp.end();
-  });
-  stream.once('fd',function(){
-    req.writeHead(200,{'Content-Type':contentType});
-  });
-  stream.pipe(resp);
-  */
-  fs.readFile(path,function(err,content){
-    resp.writeHead(200,{'Content-Type':contentType});
-    //resp.write(content);
-    resp.end(content,'utf-8');
-  });
-}).listen(8888);
-console.log('running at http://127.0.0.1:8888/');
+  resp.writeHead(200,{'Content-Type':contentType});
+  fs.createReadStream(path,{
+    'bufferSize':4096
+  }).pipe(resp);
+}).listen(appPort);
+console.log('running at '+appUrl+' and '+mediaserverUrl);
+
 /*
-// https://groups.google.com/forum/?fromgroups=#!topic/nodejs/gzng3IJcBX8
-var range=request.headers.range;
-var total=file.length;
-var parts=range.replace(/bytes=/,'').split('-');
-var partialstart=parts[0];
-var partialend=parts[1];
-var start=parseInt(partialstart,10);
-var end=partialend ? parseInt(partialend,10):total-1;
-var chunksize=(end-start)+1;
-response.writeHead(206,{'Content-Range':'bytes '+start+'-'+end+'/'+total,'Accept-Ranges':'bytes','Content-Length':chunksize,'Content-Type':type});
-response.end(file.slice(start,end),'binary'); 
+// pure node server
+mediaserverUrl="http://wiivid:8888/";
+var connect=require('connect'),
+    http=require('http');
+var app=connect()
+  .use(connect.favicon('../favicon.ico'))
+  .use(connect.logger('dev'))
+  .use(connect.static('../video'))
+  //.use(connect.directory('public'))
+  .use(connect.cookieParser())
+  //.use(connect.session({ secret: 'my secret here' }))
+  .use(function(req,res){
+    //var contentType=mime.lookup(req.url);
+});
+var server=http.createServer(app);
+server.listen(8888);
+console.log('running at '+mediaserverUrl);
 */
-var options={"follow_symlinks":true};
+
+var options={'follow_symlinks':true};
 var emitter=walk('../video',options);
 var everyone = nowjs.initialize(server);
 var data=null;
 var recent=null;
 if(typeof localStorage==='undefined'||localStorage===null){
-  var LocalStorage=require('node-localstorage').LocalStorage;
-  localStorage=new LocalStorage('./scratch');
+  var Storage=require('dom-storage');
+  localStorage=new Storage('./db.json');
 }
 if(!localStorage.getItem('data')){
   data={
    'name':'toplevel',
    'path':'../video',
-   'url':'http://wiivid:9000/',
+   'url':mediaserverUrl,
    'lastmod':'',
    'subdirs':new Array(),
    'vids':new Array()
@@ -96,7 +72,7 @@ if(!localStorage.getItem('data')){
 }else{
   //localStorage._deleteLocation();
   data=JSON.parse(localStorage.getItem('data'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
+  //omdbFindVid(_sVidSearch(mediaserverUrl+'episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
   //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Star Trek (2009).mp4'));
   //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Inglourious Basterds (2009).mp4'));
   //omdbFindVid(vidSearch('http://localhost:9000/The Legend of Korra/The Legend of Korra - S01E03 - The Revelation.mp4'));
@@ -105,7 +81,7 @@ if(!localStorage.getItem('data')){
 resetFound();
 if(!localStorage.getItem('recent')){
   recent={
-      'vids':new Array()
+    'vids':new Array()
   };
 }else{
   recent=JSON.parse(localStorage.getItem('recent'));
@@ -118,13 +94,13 @@ emitter.on('directory',function(dirpath,stat){
       var vids=new Array();
       var subdirs=new Array();
       var dir={
-          'name':   dirpath.substring(dirpath.lastIndexOf('/')+1,dirpath.length),
-          'path':   dirpath,
-          'url':    dirUrl,
-          'lastmod':stat.atime,
-          'found':  true,
-          'subdirs':subdirs,
-          'vids':   vids
+        'name':   dirpath.substring(dirpath.lastIndexOf('/')+1,dirpath.length),
+        'path':   dirpath,
+        'url':    dirUrl,
+        'lastmod':stat.atime,
+        'found':  true,
+        'subdirs':subdirs,
+        'vids':   vids
       };
       var parentUrl=dir.url.substring(0,dir.url.lastIndexOf('/'));
       var parent=data.find({url:parentUrl});
@@ -183,27 +159,27 @@ emitter.on('file',function(vidpath,stat){
       console.log('year: |'+year+'|');
       */
       vid={
-          'name':name,
-          'series':series,
-          'season':season,
-          'episode':episode,
-          'title':title,
-          'year':year,
-          'path':vidpath,
-          'url':vidUrl,
-          'lastmod':stat.atime,
-          'found':true,
-          'mime':mime.lookup(vidpath),
-          'timePlayed':0,
-          'duration':0,
-          'omdb':-1, // will be !-1 if one value is returned from omdb
-          'omdbResults':-1, // will be !-1 if multiple values are returned from omdb
-          'omdbError':-1,
-          'metascore':-1
-          };
+        'name':name,
+        'series':series,
+        'season':season,
+        'episode':episode,
+        'title':title,
+        'year':year,
+        'path':vidpath,
+        'url':vidUrl,
+        'lastmod':stat.atime,
+        'found':true,
+        'mime':mime.lookup(vidpath),
+        'timePlayed':0,
+        'duration':0,
+        'omdb':-1, // will be !-1 if one value is returned from omdb
+        'omdbResults':-1, // will be !-1 if multiple values are returned from omdb
+        'omdbError':-1,
+        'metascore':-1
+      };
       var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
       var parent=data.find({url:parentUrl});
-      parent.vids.push(vid);
+      parent.vids.push(vid); // TODO vids is undefined at toplevel 
     }else{
       vid.found=true;
       var newmod=new Date(stat.atime);
@@ -282,30 +258,36 @@ function omdbFindVid(vid){
   }
 }
 everyone.now.sBackup=function(vid){
+  console.log(vid);
   var currentVid=data.find({url:vid.url});
   var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
+  console.log('parentUrl: '+parentUrl);
   var parent=data.find({url:parentUrl});
+  //console.log('parent vids length: '+parent.vids.length);
+  console.log('vid index: '+parent.vids.indexOf(currentVid));
   parent.vids.splice(parent.vids.indexOf(currentVid),1,vid);
+  console.log('new vid: ',parent.vids[parent.vids.indexOf(vid)]);
+  console.log('new data: ',data.subdirs[1]);
   localStorage.setItem('data',JSON.stringify(data));
   everyone.now.cGetData(data);
 };
 everyone.now.sAddRecent=function(recentvid){
   for(var i=0;i<recent.vids.length;i++){
-    if(recentvid.series==recent.vids[i].series){
-      recent.vids.splice(i,1);
-    }
+    if(recentvid.series!=''&&recentvid.series==recent.vids[i].series)recent.vids.splice(i,1); //remove existing vid if it is from same series
+    else if(recentvid.name==recent.vids[i].name)recent.vids.splice(i,1); //remove existing vid if it has same name
   }
-  if(recent.vids.length>1)recent.vids.splice(0,0,recentvid);
-  else recent.vids.push(recentvid);
+  recent.vids.reverse();
+  recent.vids.push(recentvid);
+  recent.vids.reverse();
   localStorage.setItem('recent',JSON.stringify(recent));
   this.now.cGetRecent(recent);
 };
 everyone.now.sGetRecent=function(){
-  console.log('sGetRecent at '+new Date()+' from: '+this.user.clientId);
+  console.log(new Date(),'sGetRecent from '+this.user.clientId);
   this.now.cGetRecent(recent);
 }
 everyone.now.sGetData=function(){
-  console.log('sGetRecent at '+new Date()+' from: '+this.user.clientId);
+  console.log(new Date(),'sGetData from '+this.user.clientId);
   this.now.cGetData(data);
 };
 everyone.now.sGetMediaServerUrl=function(){
