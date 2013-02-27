@@ -45,9 +45,10 @@
     - this location could be found by reading vid.timePlayed at time of click (which will always be a little earlier in the vid than when actually clicked)
     - frequency of vid.timePlayed updates could be changed accordingly
     
-- mozilla webapp:
+- mozilla openwebapp:
 	- https://developer.mozilla.org/en-US/docs/Apps/Manifest
-	- app will likely need to be a certified app to run as a background service (need to verify)
+	- app will need to be a certified app to have the backgroundservice permission (gaining access to the background services API)
+	- this API would allow an application to specify a background_page attribute in its manifest which tells gaia to load a specific page at startup
 	
 - offline functionality: localstorage and appcache
 	- appcache is for files and folders
@@ -59,3 +60,6 @@
 		- go to a marketplace and choose install (or download for later install if the app must be a certified package)
 		- go to the demo site and the client will be able to detect if anything is installed and if the client system is capable of running the server
 	- 
+
+- mouse and touch:
+    - at one point was using jquery.ui.touch-punch.min.js but it was causing issues

@@ -58,7 +58,7 @@ var data=null;
 var recent=null;
 if(typeof localStorage==='undefined'||localStorage===null){
   var Storage=require('dom-storage');
-  localStorage=new Storage('./db.json');
+  localStorage=new Storage('./../../db.json');
 }
 if(!localStorage.getItem('data')){
   data={

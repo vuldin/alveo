@@ -1,0 +1,10 @@
+{
+  "name": "webmedsvr",
+  "version": "13.02.1-alpha",
+  "main": ["./web/js/app.js", "./web/css/app.css"],
+  "dependencies": {
+    "eventEmitter": "git://github.com/components/jquery.git"
+    "eventEmitter": "git://github.com/components/jqueryui"
+    "eventEmitter": "git://github.com/mozilla/popcorn-js"
+  }
+}
