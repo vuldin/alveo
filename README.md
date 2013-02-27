@@ -53,6 +53,12 @@ Then after bower is available
     cd webmedsvr
     bower install jquery jquery-ui popcornjs
     npm install
+    
+Since no file in the directory web/video is commited to the repository,
+this directory must be recreated in your project (git doesn't commit empty
+dirs):
+
+   mkdir web/video 
 
 # Usage
 
@@ -77,3 +83,15 @@ server'
 
 I have not tested using node for both hosting media content and running
 webmedsvr in a while, so it will likely not run without modification.
+
+# Future plans
+
+This project will hopefully be a open webapp that could be found in the
+Mozilla marketplace or some other similar webapp market. The potential
+roadblock in regard to this is the security limitations of B2G. Only
+certified apps (those created by Mozilla and device manufacturers) will
+have access to the background service (and other APIs) which will likely
+be needed by webmedsvr. According to Mozilla they have no plans to allow
+a more broad access to these APIs (possibly opening the APIs to priveleged
+apps in some way), but it's still early in development. For more info see:
+https://support.mozilla.org/en-US/questions/945629 
