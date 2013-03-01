@@ -13,6 +13,7 @@
   	"url": "https://github.com/joshuapurcell/webmedsvr.git"
   },
   "scripts": {
-  	"start": "cd web/js;node server.js"
+    "preinstall": "mkdir web/video",
+  	"start": "node web/js/server.js"
   }
 }

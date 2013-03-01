@@ -2,69 +2,37 @@ var fs=require('fs'),
     walk=require('walkdir');
     nowjs=require('now'),
     mime=require('mime'),
-    $=require('jquery'),
-    mediaserverUrl=null; // TODO get this value from server
-// node:8888 + httpd:9999
-var appPort=8888;
-var appUrl="http://wiivid:"+appPort+"/";
-var mediaserverUrl="http://wiivid:9999/";
-var server=require('http').createServer(function(req,resp){
-  var path=req.url,
-      contentType='',
-      options={
-        //flags:'r',
-        //encoding:'utf8',
-        //fd:null,
-        //mode: 0666,
-        //start:0,
-        //end:99,
-        //bufferSize:64 * 1024
-      };
-  if(path=='/')path='/index.html';
-  path=__dirname.substring(0,__dirname.lastIndexOf('/'))+decodeURI(path);
-  contentType=mime.lookup(path);
-  //console.log(req.headers['user-agent']);
-  resp.writeHead(200,{'Content-Type':contentType});
-  fs.createReadStream(path,{
-    'bufferSize':4096
-  }).pipe(resp);
+    $=require('jquery');
+var config=JSON.parse(fs.readFileSync(__dirname+'/../../config.json','utf8',function(error,data){
+  if(error)throw error;
+}));
+var serverName=config.serverName;
+var serverPort=config.serverPort;
+var appPort=config.appPort;
+var serverUrl='http://'+serverName+':'+serverPort+'/';
+var server=require('http').createServer(function(req,res){
+  res.writeHead(404);
+  res.end('404 Not Found\n');
 }).listen(appPort);
-console.log('running at '+appUrl+' and '+mediaserverUrl);
-
-/*
-// pure node server
-mediaserverUrl="http://wiivid:8888/";
-var connect=require('connect'),
-    http=require('http');
-var app=connect()
-  .use(connect.favicon('../favicon.ico'))
-  .use(connect.logger('dev'))
-  .use(connect.static('../video'))
-  //.use(connect.directory('public'))
-  .use(connect.cookieParser())
-  //.use(connect.session({ secret: 'my secret here' }))
-  .use(function(req,res){
-    //var contentType=mime.lookup(req.url);
-});
-var server=http.createServer(app);
-server.listen(8888);
-console.log('running at '+mediaserverUrl);
-*/
-
+console.log('running at '+appPort);
 var options={'follow_symlinks':true};
-var emitter=walk('../video',options);
+//var appDir=process.cwd().substring(0,process.cwd().indexOf(serverName)+serverName.length);
+var appDir=__dirname.substring(0,__dirname.lastIndexOf('/'));
+appDir=appDir.substring(0,appDir.lastIndexOf('/'));
+var vidDir=appDir+'/web/video';
+var emitter=walk(vidDir,options); // TODO use a walker that targets the http server (instead of filesystem directly)
 var everyone = nowjs.initialize(server);
 var data=null;
 var recent=null;
 if(typeof localStorage==='undefined'||localStorage===null){
   var Storage=require('dom-storage');
-  localStorage=new Storage('./../../db.json');
+  localStorage=new Storage(appDir+'/db.json');
 }
 if(!localStorage.getItem('data')){
   data={
    'name':'toplevel',
-   'path':'../video',
-   'url':mediaserverUrl,
+   'path':vidDir,
+   'url':serverUrl,
    'lastmod':'',
    'subdirs':new Array(),
    'vids':new Array()
@@ -72,11 +40,11 @@ if(!localStorage.getItem('data')){
 }else{
   //localStorage._deleteLocation();
   data=JSON.parse(localStorage.getItem('data'));
-  //omdbFindVid(_sVidSearch(mediaserverUrl+'episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Star Trek (2009).mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Inglourious Basterds (2009).mp4'));
+  //omdbFindVid(_sVidSearch(serverUrl+'episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/action/Star Trek (2009).mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/action/Inglourious Basterds (2009).mp4'));
   //omdbFindVid(vidSearch('http://localhost:9000/The Legend of Korra/The Legend of Korra - S01E03 - The Revelation.mp4'));
-  //omdbFindVid(vidSearch('http://wiivid:9000/The Legend of Korra/The Legend of Korra - S01E03 - The Revelation.mp4'));
+  //omdbFindVid(vidSearch('http://webmedsvr:9000/The Legend of Korra/The Legend of Korra - S01E03 - The Revelation.mp4'));
 }
 resetFound();
 if(!localStorage.getItem('recent')){
@@ -88,7 +56,9 @@ if(!localStorage.getItem('recent')){
 }
 emitter.on('directory',function(dirpath,stat){
   if(dirpath.indexOf("/.")==-1){ // only non-hidden files
-    var dirUrl=dirpath.replace(dirpath.substring(0,dirpath.indexOf('video')+6),mediaserverUrl);
+    //var dirUrl=dirpath.replace(dirpath.substring(0,dirpath.indexOf('video')+6),serverUrl);
+    var dirUrl=dirpath.replace(dirpath.substring(0,dirpath.indexOf('video')),serverUrl);
+    //console.log('dirUrl: '+dirUrl);
     var dir=data.find({url:dirUrl});
     if(!dir){ // only if it doesn't already exist in data
       var vids=new Array();
@@ -120,7 +90,10 @@ emitter.on('directory',function(dirpath,stat){
 });
 emitter.on('file',function(vidpath,stat){
   if(vidpath.indexOf('/.')==-1){ // ignore hidden files
-    var vidUrl=vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),mediaserverUrl);
+    //console.log('vidpath: '+vidpath);
+    //var vidUrl=vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')+6),serverUrl);
+    var vidUrl=vidpath.replace(vidpath.substring(0,vidpath.indexOf('video')),serverUrl);
+    //console.log('vidUrl: '+vidUrl);
     var vid=data.find({url:vidUrl});
     if(!vid){ // new vid
       var series='';
@@ -194,11 +167,11 @@ emitter.on('end',function(){
   sortDir(data);
   //console.log(JSON.stringify(data,null,2));
   localStorage.setItem('data',JSON.stringify(data));
-  //waitforDefined(_sVidSearch('http://wiivid:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/lane/The Adventures Of Walker And Ping Ping - The Chinese Market (2008).mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/lane/Journey To The East - The River Dragon King (2008)/Journey To The East - The River Dragon King (2008) - pt1.mp4'));
-  //omdbFindVid(_sVidSearch('http://wiivid:9000/action/Inglourious Basterds (2009).mp4'));
+  //waitforDefined(_sVidSearch('http://webmedsvr:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/episodes/Breaking Bad/Season05/Breaking Bad - s05e01 - Live Free or Die.mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/lane/The Adventures Of Walker And Ping Ping - The Chinese Market (2008).mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/lane/Journey To The East - The River Dragon King (2008)/Journey To The East - The River Dragon King (2008) - pt1.mp4'));
+  //omdbFindVid(_sVidSearch('http://webmedsvr:9000/action/Inglourious Basterds (2009).mp4'));
 });
 function resetFound(array){ // sets all dirs/vids found variable to false
   if(array==undefined)array=data.subdirs;
@@ -291,7 +264,7 @@ everyone.now.sGetData=function(){
   this.now.cGetData(data);
 };
 everyone.now.sGetMediaServerUrl=function(){
-  this.now.cGetMediaServerUrl(mediaserverUrl);
+  this.now.cGetMediaServerUrl(serverUrl);
 }
 Object.prototype.find=function(keyObj){
   var prop,key,val,tRet;
