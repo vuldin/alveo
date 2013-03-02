@@ -1,6 +1,7 @@
-var data=-1; // main data containing all directory and video information 
-var recent=-1; // recently played video url list 
-//var vidDetails=-1; // result from server of a request for video metadata 
+var data=-1; // main data containing all directory and video information
+var recent=-1; // recently played videos
+var queue=-1; // saved videos for future playback
+//var vidDetails=-1; // result from server of a request for video metadata
 var vidsDivTop=0;
 var dirSearchResults=new Array();
 var vidSearchResults=new Array();
@@ -28,6 +29,7 @@ $(function(){
     //log('now.ready');
     now.sGetData();
     now.sGetRecent();
+    now.sGetQueue();
     //now.sGetMediaServerUrl();
     initialDirDiv.on('mouseup',function(event){
       event.stopPropagation();
@@ -46,6 +48,9 @@ now.cGetRecent=function(val){
   //log('new recent variable from server');
   //console.info('new recent variable: ',val);
   recent=val;
+}
+now.cGetQueue=function(val){
+  queue=val;
 }
 function createDirectoryList(){
   if(data==-1)setTimeout(createDirectoryList,100);

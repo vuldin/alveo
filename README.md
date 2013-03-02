@@ -8,18 +8,18 @@ the amount of testing done for each browser). Firefox on Linux still
 does not support the H.264 video codec, so some content may be unplayable
 on that platform.
 
-Webmedsvr focuses on allowing simultaneous ingestion of media content
-and associated metadata across multiple devices. One interesting use case
+Webmedsvr focuses on allowing simultaneous consumption of media content
+and its associated metadata across multiple devices. One interesting use case
 is watching Game of Thrones while viewing a map of where events take place
 and showing comments from other users who have viewed the same content.
 Comments from other users would appear in the comment area (on the second
-screen device for example) at the relevant time during video playback.
-Highlights include auto-resume of video playback regardless of device
-(allowing for a user to seamlessly switch to another device, video
-metadata download from external sources (currently OMDB), custom metadata
-upload that is shared with other connected clients, and server-based
-storage of metadata (mainly due to limitations in implementation of local
-storage on the WiiU Browser).
+screen device for example) at the relevant time during video playback in a
+way similar to soundcloud.com. Highlights include auto-resume of video
+playback regardless of device (allowing for a user to seamlessly switch to
+another device, video metadata download from external sources (currently
+OMDB), custom metadata upload that is shared with other connected clients,
+and server-based storage of metadata (mainly due to limitations in the
+implementation of local storage on the WiiU Browser).
 
 Webmedsvr uses nodejs and a variety of modules (see node_modules and
 web/components). Serving videos from a server running in nodejs has proven
