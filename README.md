@@ -19,20 +19,26 @@ Server-based storage has been chosen to ensure user-generated information is ava
 
 ## Setup
 There are several ways to get this app running on your system. My favorite way to do this uses bower:
-    npm install -g bower
+````
+npm install -g bower
+````
 
 Then after bower is available:
-    git clone git://github.com/joshuapurcell/alveo.git alveo
-    cd alveo
-    bower install jquery jquery-ui popcornjs
-    npm install
+```
+git clone git://github.com/joshuapurcell/alveo.git alveo
+cd alveo
+bower install jquery jquery-ui popcornjs
+npm install
+````
 
 ## Usage
+At the moment this app gets information on media content from the local filesystem. You tell the app where to look for your media collection by creating symbolic links inside **web/video** folder (which was created when you ran the `npm install` command earlier). This is a temporary workaround until DLNA server functionality is added.
 1. Create the symbolic links inside **web/video** which link to your media content
 2. Update the config section of package.json according to your environment:
-  - serverName: hostname of the web server hosting content (will be DLNA server in the future)
-  - serverPort: port of web server hosting content (will be removed once DLNA server is being used)
-  - appPort: port of the node server
+  - serverName: hostname of the node server
+  - serverPort: port of the node server
+  - dlnaServerName: hostname of the DLNA server
+  - dlnaServerPort: port of the DLNA server
 3. Run `npm start` from the root directory
 
 The symbolic links you created will then be used to build a database of your media content which will be stored in a file named db.json. The last step (for now) is to ensure the web server which will host your media content is up.

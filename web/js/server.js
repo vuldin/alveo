@@ -1,21 +1,40 @@
 /**@license
- * {{project}} <{{homepage}}>
- * Copyright (C) {{year}} {{author}}
- * {{license}}
+ * alveo <https://github.com/joshuapurcell/alveo>
+ * Copyright (C) 2013 Joshua Purcell <joshua.purcell@gmail.com>
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 var fs=require('fs'),
     walk=require('walkdir');
     nowjs=require('now'),
     mime=require('mime'),
     $=require('jquery');
-var serverUrl='http://'+process.env.npm_package_config_serverName+':'+process.env.npm_package_config_serverPort+'/'; // pulls server/port from package.json
-var server=require('http').createServer(function(req,res){
-  res.writeHead(404);
-  res.end('404 Not Found');
-}).listen(process.env.npm_package_config_appPort); // pulls app port from package.json
-console.log('running at '+process.env.npm_package_config_appPort);
-var walkerOptions={'follow_symlinks':true};
+var serverUrl='http://'+process.env.npm_package_config_dlnaServerName+':'+process.env.npm_package_config_dlnaServerPort+'/'; // pulls DLNA server/port from package.json
 var appDir=__dirname.substring(0,__dirname.lastIndexOf('/'));
+var server=require('http').createServer(function(req,res){
+  var path='/web'+req.url;
+  if(path=='/web/')path+='index.html';
+  if(path.substring(0,15)=='/web/components')path='/components'+path.substring(15,path.length);
+  path=appDir+decodeURI(path);
+  var contentType=mime.lookup(path);
+  //res.writeHead(404);
+  //res.end('404 Not Found');
+  res.writeHead(200,{'Content-Type':contentType});
+  fs.createReadStream(path,{'bufferSize':4096}).pipe(res);
+}).listen(process.env.npm_package_config_serverPort); // pulls app port from package.json
+console.log('running at '+process.env.npm_package_config_serverPort);
+var walkerOptions={'follow_symlinks':true};
 appDir=appDir.substring(0,appDir.lastIndexOf('/'));
 var vidDir=appDir+'/web/video';
 var emitter=walk(vidDir,walkerOptions); // TODO find a walker that targets the http server instead of filesystem

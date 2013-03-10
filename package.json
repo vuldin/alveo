@@ -2,9 +2,10 @@
   "name":"alveo",
   "description":"View media content while creating and sharing relevant metadata.",
   "config":{
-    "serverName":"laptop",
-    "serverPort":8080,
-    "appPort":8888
+    "serverName":"alveo",
+    "serverPort":8888,
+    "dlnaServerName":"alveo",
+    "dlnaServerPort":8080
   },
   "project":"alveo",
   "homePage":"https://github.com/joshuapurcell/alveo",
@@ -23,7 +24,7 @@
   	"url":"https://github.com/joshuapurcell/alveo.git"
   },
   "scripts":{
-    "preinstall":"mkdir web/video",
+    "preinstall":"mkdir web/video;node config.js",
   	"start":"node web/js/server.js"
   },
   "license":"GPL v3",
