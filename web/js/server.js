@@ -1,18 +1,19 @@
+/**@license
+ * {{project}} <{{homepage}}>
+ * Copyright (C) {{year}} {{author}}
+ * {{license}}
+ */
 var fs=require('fs'),
     walk=require('walkdir');
     nowjs=require('now'),
     mime=require('mime'),
     $=require('jquery');
-var config=JSON.parse(fs.readFileSync(__dirname+'/../../config.json','utf8',function(error,data){if(error)throw error;}));
-var serverName=config.serverName;
-var serverPort=config.serverPort;
-var appPort=config.appPort; // index.html import of now.js needs to match this port 
-var serverUrl='http://'+serverName+':'+serverPort+'/';
+var serverUrl='http://'+process.env.npm_package_config_serverName+':'+process.env.npm_package_config_serverPort+'/'; // pulls server/port from package.json
 var server=require('http').createServer(function(req,res){
   res.writeHead(404);
   res.end('404 Not Found');
-}).listen(appPort);
-console.log('running at '+appPort);
+}).listen(process.env.npm_package_config_appPort); // pulls app port from package.json
+console.log('running at '+process.env.npm_package_config_appPort);
 var walkerOptions={'follow_symlinks':true};
 var appDir=__dirname.substring(0,__dirname.lastIndexOf('/'));
 appDir=appDir.substring(0,appDir.lastIndexOf('/'));
@@ -113,6 +114,8 @@ emitter.on('file',function(vidpath,stat){
         'omdbError':-1,
         'metascore':-1
       };
+      /*
+      // test changes on specific file names
       if(vid.name.match(/Lord\ of\ the\ Rings/)){
         console.log('name: |'+vid.name+'|');
         console.log('series: |'+vid.series+'|');
@@ -121,6 +124,7 @@ emitter.on('file',function(vidpath,stat){
         console.log('title: |'+vid.title+'|');
         console.log('year: |'+vid.year+'|');
       }
+      */
       var parentUrl=vid.url.substring(0,vid.url.lastIndexOf('/'));
       var parent=data.find({url:parentUrl});
       parent.vids.push(vid); 

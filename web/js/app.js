@@ -1,3 +1,8 @@
+/**@license
+ * {{project}} <{{homepage}}>
+ * Copyright (C) {{year}} {{author}}
+ * {{license}}
+ */
 var data=-1; // main data containing all directory and video information
 var recent=-1; // recently played videos
 var queue=-1; // saved videos for future playback

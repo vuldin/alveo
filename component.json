@@ -1,5 +1,5 @@
 {
-  "name": "webmedsvr",
+  "name": "alveo",
   "version": "13.02.1-alpha",
   "main": ["./web/js/app.js", "./web/css/app.css"],
   "dependencies": {

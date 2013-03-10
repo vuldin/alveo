@@ -1,19 +1,33 @@
 {
-  "name": "webmedsvr",
-  "version": "13.02.1-alpha",
-  "dependencies": {
-    "dom-storage": "1.0.2",
-    "jquery": "~1.8.3",
-    "mime": "1.2.8",
-    "now": "0.8.1",
-    "walkdir": "0.0.5"
+  "name":"alveo",
+  "description":"View media content while creating and sharing relevant metadata.",
+  "config":{
+    "serverName":"laptop",
+    "serverPort":8080,
+    "appPort":8888
   },
-  "repository": {
-  	"type": "git",
-  	"url": "https://github.com/joshuapurcell/webmedsvr.git"
+  "project":"alveo",
+  "homePage":"https://github.com/joshuapurcell/alveo",
+  "year":"2013",
+  "author":"Joshua Purcell <joshua.purcell@gmail.com>",
+  "version":"13.03.09",
+  "dependencies":{
+    "dom-storage":"1.0.2",
+    "jquery":"~1.8.3",
+    "mime":"1.2.8",
+    "now":"0.8.1",
+    "walkdir":"0.0.5"
   },
-  "scripts": {
-    "preinstall": "mkdir web/video",
-  	"start": "node web/js/server.js"
+  "repository":{
+  	"type":"git",
+  	"url":"https://github.com/joshuapurcell/alveo.git"
+  },
+  "scripts":{
+    "preinstall":"mkdir web/video",
+  	"start":"node web/js/server.js"
+  },
+  "license":"GPL v3",
+  "engines":{
+    "node":"~0.8.21"
   }
 }

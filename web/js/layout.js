@@ -1,3 +1,8 @@
+/**@license
+ * {{project}} <{{homepage}}>
+ * Copyright (C) {{year}} {{authname}}
+ * {{license}}
+ */
 $(function(){
   resizePage();
 });

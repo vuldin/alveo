@@ -1,3 +1,8 @@
+/**@license
+ * {{project}} <{{homepage}}>
+ * Copyright (C) {{year}} {{author}}
+ * {{license}}
+ */
 $(function(){
   //addPopcornEvents();
   $('#consoleWrapper').on('click touchstart',function(){
@@ -91,6 +96,8 @@ function addVidDivEvents(vidDiv,vid){
         //playVid(vid);
         $($('#video').children()[0]).attr('src',vid.url);
         setTimePlayed=function(){_setTimePlayed(vid);};
+        console.log(popcorn);
+        console.log(vid);
         addPopcornEvents(vid);
         popcorn.load();
         popcorn.play();
