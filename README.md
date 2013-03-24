@@ -19,12 +19,12 @@ Server-based storage has been chosen to ensure user-generated information is ava
 
 ## Setup
 There are several ways to get this app running on your system. My favorite way to do this uses bower:
-````
+```` javascript
 npm install -g bower
 ````
 
 Then after bower is available:
-```
+``` javascript
 git clone git://github.com/joshuapurcell/alveo.git alveo
 cd alveo
 bower install jquery jquery-ui popcornjs
@@ -33,21 +33,16 @@ npm install
 
 ## Usage
 At the moment this app gets information on media content from the local filesystem. You tell the app where to look for your media collection by creating symbolic links inside **web/video** folder (which was created when you ran the `npm install` command earlier). This is a temporary workaround until DLNA server functionality is added.
-1. Create the symbolic links inside **web/video** which link to your media content
-2. Update the config section of package.json according to your environment:
+
+- Create the symbolic links inside **web/video** which link to your media content
+- Update the config section of package.json according to your environment:
   - serverName: hostname of the node server
   - serverPort: port of the node server
   - dlnaServerName: hostname of the DLNA server
   - dlnaServerPort: port of the DLNA server
-3. Run `npm start` from the root directory
+- Run `npm start` from the root directory
 
 The symbolic links you created will then be used to build a database of your media content which will be stored in a file named db.json. The last step (for now) is to ensure the web server which will host your media content is up.
-
-If you would rather use a fully nodejs implementation and see what the current issues are, then take the following steps:
-- comment out the mediaserverUrl and server variables in web/js/server.js
-- uncomment the section of server.js starting with the text 'pure node server'
-
-I have not tested using node for both hosting media content and the app in a while, so it will likely have issues.
 
 ## Future plans
 This project will hopefully be a open webapp that could be found in the Mozilla marketplace or some other similar webapp market. The potential roadblock in regard to this is the security limitations of B2G. Only certified apps (those created by Mozilla and device manufacturers) will have access to the background service (and other APIs) which will likely be needed.
